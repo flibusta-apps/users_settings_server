@@ -3,6 +3,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.ormar import paginate
 
+from app.depends import check_token
 from app.serializers import UserCreateOrUpdate, UserDetail, LanguageDetail
 from app.models import User, Language
 
@@ -12,7 +13,8 @@ from app.models import User, Language
 
 users_router = APIRouter(
     prefix="/users",
-    tags=["users"]
+    tags=["users"],
+    dependencies=[Depends(check_token)]
 )
 
 
@@ -56,7 +58,8 @@ async def get_or_update_user(user_id: int, data: UserCreateOrUpdate):
 
 languages_router = APIRouter(
     prefix="/languages",
-    tags=["languages"]
+    tags=["languages"],
+    dependencies=[Depends(check_token)]
 )
 
 

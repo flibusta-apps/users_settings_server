@@ -3,6 +3,6 @@ fastapi-pagination
 pydantic
 alembic
 ormar
-uvicorn
+uvicorn[standart]
 asyncpg
 psycopg2

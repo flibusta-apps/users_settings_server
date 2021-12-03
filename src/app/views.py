@@ -1,4 +1,7 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
+
+from fastapi_pagination import Page, Params
+from fastapi_pagination.ext.ormar import paginate
 
 from app.serializers import UserCreateOrUpdate, UserDetail, LanguageDetail
 from app.models import User, Language
@@ -13,9 +16,9 @@ users_router = APIRouter(
 )
 
 
-@users_router.get("/", response_model=list[UserDetail])
+@users_router.get("/", dependencies=[Depends(Params)], response_model=Page[UserDetail])
 async def get_users():
-    return await User.objects.select_related("allowed_langs").all()
+    return await paginate(User.objects.select_related("allowed_langs"))
 
 
 @users_router.get("/{user_id}", response_model=UserDetail)

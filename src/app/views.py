@@ -4,7 +4,7 @@ from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.ormar import paginate
 
 from app.depends import check_token
-from app.serializers import UserCreateOrUpdate, UserDetail, LanguageDetail
+from app.serializers import UserCreateOrUpdate, UserDetail, CreateLanguage, LanguageDetail
 from app.models import User, Language
 
 
@@ -76,3 +76,8 @@ async def get_language(code: str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     
     return language
+
+
+@languages_router.post("/", response_model=LanguageDetail)
+async def create_language(data: CreateLanguage):
+    return await Language.objects.create(**data.dict())

@@ -1,10 +1,13 @@
 from pydantic import BaseModel, constr
 
 
-class LanguageDetail(BaseModel):
-    id: int
+class CreateLanguage(BaseModel):
     label: constr(max_length=16)  # type: ignore
     code: constr(max_length=4)  # type: ignore
+
+
+class LanguageDetail(CreateLanguage):
+    id: int
 
 
 class UserBase(BaseModel):

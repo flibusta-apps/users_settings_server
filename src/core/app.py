@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 
+from fastapi_pagination import add_pagination
+
 from core.db import database
 from app.views import users_router, languages_router
 
@@ -11,6 +13,8 @@ def start_app() -> FastAPI:
     app.include_router(languages_router)
 
     app.state.database = database
+
+    add_pagination(app)
 
     @app.on_event('startup')
     async def startup() -> None:

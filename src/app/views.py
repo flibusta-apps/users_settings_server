@@ -34,7 +34,7 @@ async def get_user(user_id: int):
 
 
 @users_router.post("/{user_id}", response_model=UserDetail)
-async def get_or_update_user(user_id: int, data: UserCreateOrUpdate):
+async def create_or_update_user(user_id: int, data: UserCreateOrUpdate):
     data_dict = data.dict()
 
     user_data = await User.objects.select_related("allowed_langs").get_or_none(user_id=user_id)
@@ -42,16 +42,18 @@ async def get_or_update_user(user_id: int, data: UserCreateOrUpdate):
     allowed_langs = data_dict.pop("allowed_langs")
 
     if user_data is None:
-        return User.objects.create(**data.dict())
+        user_data = await User.objects.select_related("allowed_langs").create(**{**data_dict, "user_id": user_id})
     else:
-        user_data.update_from_dict(data.dict())
+        user_data.update_from_dict(data_dict)
 
-    user_data.allowed_langs.clear()
+    await user_data.allowed_langs.clear()  # type: ignore
 
     langs = await Language.objects.filter(code__in=allowed_langs).all()
 
     for lang in langs:
         await user_data.allowed_langs.add(lang)
+    
+    await user_data.update()
 
     return user_data
 

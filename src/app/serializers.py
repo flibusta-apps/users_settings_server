@@ -1,3 +1,5 @@
+from typing import Optional
+
 from pydantic import BaseModel, constr
 
 
@@ -11,6 +13,7 @@ class LanguageDetail(CreateLanguage):
 
 
 class UserBase(BaseModel):
+    user_id: int
     last_name: constr(max_length=64)  # type: ignore
     first_name: constr(max_length=64)  # type: ignore
     username: constr(max_length=32)  # type: ignore
@@ -21,6 +24,13 @@ class UserCreateOrUpdate(UserBase):
     allowed_langs: list[str]
 
 
-class UserDetail(BaseModel):
-    user_id: int
+class UserUpdate(BaseModel):
+    last_name: Optional[constr(max_length=64)] = None  # type: ignore
+    first_name: Optional[constr(max_length=64)] = None  # type: ignore
+    username: Optional[constr(max_length=32)] = None  # type: ignore
+    source: Optional[constr(max_length=32)] = None  # type: ignore
+    allowed_langs: Optional[list[str]] = None
+
+
+class UserDetail(UserBase):
     allowed_langs: list[LanguageDetail]

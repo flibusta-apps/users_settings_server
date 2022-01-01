@@ -2,8 +2,8 @@ from fastapi import FastAPI
 
 from fastapi_pagination import add_pagination
 
-from core.db import database
 from app.views import users_router, languages_router
+from core.db import database
 
 
 def start_app() -> FastAPI:
@@ -16,13 +16,13 @@ def start_app() -> FastAPI:
 
     add_pagination(app)
 
-    @app.on_event('startup')
+    @app.on_event("startup")
     async def startup() -> None:
         database_ = app.state.database
         if not database_.is_connected:
             await database_.connect()
 
-    @app.on_event('shutdown')
+    @app.on_event("shutdown")
     async def shutdown() -> None:
         database_ = app.state.database
         if database_.is_connected:

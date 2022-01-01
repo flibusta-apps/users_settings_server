@@ -20,7 +20,7 @@ class Language(ormar.Model):
 class User(ormar.Model):
     class Meta(BaseMeta):
         tablename = "user_settings"
-    
+
     id: int = ormar.Integer(primary_key=True)  # type: ignore
 
     user_id: int = ormar.BigInteger(unique=True)  # type: ignore

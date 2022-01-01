@@ -21,7 +21,7 @@ class UserBase(BaseModel):
 
 
 class UserCreateOrUpdate(UserBase):
-    allowed_langs: list[str]
+    allowed_langs: Optional[list[str]] = None
 
 
 class UserUpdate(BaseModel):

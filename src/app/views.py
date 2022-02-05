@@ -122,3 +122,13 @@ async def get_language(code: str):
 @languages_router.post("/", response_model=LanguageDetail)
 async def create_language(data: CreateLanguage):
     return await Language.objects.create(**data.dict())
+
+
+healthcheck_router = APIRouter(
+    tags=["healthcheck"], dependencies=[Depends(check_token)]
+)
+
+
+@healthcheck_router.get("/healthcheck")
+async def healthcheck():
+    return "Ok!"

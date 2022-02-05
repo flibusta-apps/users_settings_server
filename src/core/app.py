@@ -2,7 +2,7 @@ from fastapi import FastAPI
 
 from fastapi_pagination import add_pagination
 
-from app.views import users_router, languages_router
+from app.views import users_router, languages_router, healthcheck_router
 from core.db import database
 
 
@@ -11,6 +11,7 @@ def start_app() -> FastAPI:
 
     app.include_router(users_router)
     app.include_router(languages_router)
+    app.include_router(healthcheck_router)
 
     app.state.database = database
 

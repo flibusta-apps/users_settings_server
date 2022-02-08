@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 
+import aioredis
 from fastapi_pagination import add_pagination
 
 from app.views import users_router, languages_router, healthcheck_router
+from core.config import env_config
 from core.db import database
 
 
@@ -14,6 +16,13 @@ def start_app() -> FastAPI:
     app.include_router(healthcheck_router)
 
     app.state.database = database
+
+    app.state.redis = aioredis.Redis(
+        host=env_config.REDIS_HOST,
+        port=env_config.REDIS_PORT,
+        db=env_config.REDIS_DB,
+        password=env_config.REDIS_PASSWORD,
+    )
 
     add_pagination(app)
 

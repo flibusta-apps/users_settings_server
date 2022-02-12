@@ -74,9 +74,7 @@ async def create_language(data: CreateLanguage):
     return await Language.objects.create(**data.dict())
 
 
-healthcheck_router = APIRouter(
-    tags=["healthcheck"], dependencies=[Depends(check_token)]
-)
+healthcheck_router = APIRouter(tags=["healthcheck"])
 
 
 @healthcheck_router.get("/healthcheck")

@@ -11,7 +11,7 @@ fastapi-pagination = "^0.9.3"
 alembic = "^1.7.7"
 ormar = {version = ">=0.11", extras = ["postgresql"]}
 uvicorn = {extras = ["standart"], version = "^0.17.6"}
-httpx = "^0.22.0"
+httpx = ">=0.23.0"
 aioredis = "^2.0.1"
 orjson = "^3.6.8"
 prometheus-fastapi-instrumentator = "^5.8.1"

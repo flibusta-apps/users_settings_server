@@ -2,8 +2,8 @@ from typing import Optional, Union
 
 from fastapi import HTTPException, status
 
-import aioredis
 import orjson
+from redis import asyncio as aioredis
 
 from app.models import User
 from app.serializers import UserCreateOrUpdate, UserDetail, UserUpdate

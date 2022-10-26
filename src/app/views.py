@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 
-import aioredis
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.ormar import paginate
+from redis import asyncio as aioredis
 
 from app.depends import check_token
 from app.models import User, Language

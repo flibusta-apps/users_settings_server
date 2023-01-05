@@ -33,4 +33,5 @@ class UserUpdate(BaseModel):
 
 
 class UserDetail(UserBase):
+    id: int
     allowed_langs: list[LanguageDetail]

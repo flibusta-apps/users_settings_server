@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import ormar
 
 from core.db import metadata, database
@@ -30,3 +32,15 @@ class User(ormar.Model):
     source: str = ormar.String(max_length=32)  # type: ignore
 
     allowed_langs = ormar.ManyToMany(Language)
+
+
+class UserActivity(ormar.Model):
+    class Meta(BaseMeta):
+        tablename = "user_activity"
+
+    id: int = ormar.Integer(primary_key=True)  # type: ignore
+
+    user: User = ormar.ForeignKey(
+        User, nullable=False, unique=True, related_name="last_activity"
+    )
+    updated: datetime = ormar.DateTime(timezone=False)  # type: ignore

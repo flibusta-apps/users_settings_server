@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, HTTPException, status, Depends, Request
 
 from fastapi_pagination import Page, Params
@@ -5,7 +7,7 @@ from fastapi_pagination.ext.ormar import paginate
 from redis import asyncio as aioredis
 
 from app.depends import check_token
-from app.models import User, Language
+from app.models import User, Language, UserActivity
 from app.serializers import (
     UserCreateOrUpdate,
     UserUpdate,
@@ -47,6 +49,23 @@ async def create_or_update_user(request: Request, data: UserCreateOrUpdate):
 async def update_user(request: Request, user_id: int, data: UserUpdate):
     redis: aioredis.Redis = request.app.state.redis
     return await UsersDataManager.update_user(user_id, data, redis)
+
+
+@users_router.post("/{user_id}/update_activity")
+async def update_activity(
+    request: Request, user_id: int, data: UserCreateOrUpdate
+) -> None:
+    redis: aioredis.Redis = request.app.state.redis
+    user = await UsersDataManager.create_or_update_user(data, redis)
+
+    activity = await UserActivity.objects.get_or_none(user__user_id=user_id)
+
+    if activity is None:
+        await UserActivity.objects.create(user=user.id, updated=datetime.now())
+        return
+
+    activity.updated = datetime.now()
+    await activity.update()
 
 
 languages_router = APIRouter(

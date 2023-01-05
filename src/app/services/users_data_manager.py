@@ -50,7 +50,7 @@ class UsersDataManager:
     @classmethod
     async def get_user(
         cls, user_id: int, redis: aioredis.Redis
-    ) -> Optional[UserDetail]:
+    ) -> Optional[UserDetail | User]:
         if cached_user := await cls._get_user_from_cache(user_id, redis):
             return cached_user
 
@@ -60,7 +60,7 @@ class UsersDataManager:
             return None
 
         await cls._cache_user(user, redis)
-        return user  # type: ignore
+        return user
 
     @classmethod
     def _is_has_data_to_update(cls, new_user: UserUpdate) -> bool:
@@ -106,7 +106,7 @@ class UsersDataManager:
     @classmethod
     async def create_or_update_user(
         cls, data: UserCreateOrUpdate, redis: aioredis.Redis
-    ):
+    ) -> User | UserDetail:
         user = await cls.get_user(data.user_id, redis)
 
         if user is None:
@@ -121,7 +121,9 @@ class UsersDataManager:
 
     @classmethod
     def _is_need_update(
-        cls, old_user: UserDetail, new_user: Union[UserUpdate, UserCreateOrUpdate]
+        cls,
+        old_user: UserDetail | User,
+        new_user: Union[UserUpdate, UserCreateOrUpdate],
     ) -> bool:
         old_data = old_user.dict()
         new_data = new_user.dict()

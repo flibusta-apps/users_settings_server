@@ -1,8 +1,7 @@
 from typing import Optional, Union
 
-from fastapi import HTTPException, status
-
 import orjson
+from fastapi import HTTPException, status
 from redis import asyncio as aioredis
 
 from app.models import User
@@ -134,9 +133,9 @@ class UsersDataManager:
             if new_data[key] != old_data[key]:
                 return True
 
-        if allowed_langs and set(allowed_langs) != set(
-            [lang.code for lang in old_user.allowed_langs]
-        ):
+        if allowed_langs and set(allowed_langs) != {
+            lang.code for lang in old_user.allowed_langs
+        }:
             return True
 
         return False

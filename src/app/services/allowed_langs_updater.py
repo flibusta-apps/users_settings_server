@@ -1,12 +1,12 @@
 from typing import cast
 
-from app.models import User, Language
+from app.models import Language, User
 
 
 async def update_user_allowed_langs(user: User, new_allowed_langs: list[str]) -> bool:
     user_allowed_langs = cast(list[Language], user.allowed_langs)
 
-    exists_langs = set(lang.code for lang in user_allowed_langs)
+    exists_langs = {lang.code for lang in user_allowed_langs}
     new_langs = set(new_allowed_langs)
 
     to_delete = exists_langs - new_langs

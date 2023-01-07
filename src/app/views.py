@@ -1,22 +1,20 @@
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, status, Depends, Request
-
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.ormar import paginate
 from redis import asyncio as aioredis
 
 from app.depends import check_token
-from app.models import User, Language, UserActivity
+from app.models import Language, User, UserActivity
 from app.serializers import (
-    UserCreateOrUpdate,
-    UserUpdate,
-    UserDetail,
     CreateLanguage,
     LanguageDetail,
+    UserCreateOrUpdate,
+    UserDetail,
+    UserUpdate,
 )
 from app.services.users_data_manager import UsersDataManager
-
 
 users_router = APIRouter(
     prefix="/users", tags=["users"], dependencies=[Depends(check_token)]

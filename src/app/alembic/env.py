@@ -2,10 +2,8 @@ import os
 import sys
 
 from alembic import context
-from sqlalchemy.engine import create_engine
-
 from core.db import DATABASE_URL
-
+from sqlalchemy.engine import create_engine
 
 myPath = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, myPath + "/../../")
@@ -14,7 +12,6 @@ config = context.config
 
 
 from app.models import BaseMeta
-
 
 target_metadata = BaseMeta.metadata
 

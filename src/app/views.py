@@ -52,11 +52,11 @@ async def update_user(request: Request, user_id: int, data: UserUpdate):
 
 
 @users_router.post("/{user_id}/update_activity")
-async def update_activity(
-    request: Request, user_id: int, data: UserCreateOrUpdate
-) -> None:
-    redis: aioredis.Redis = request.app.state.redis
-    user = await UsersDataManager.create_or_update_user(data, redis)
+async def update_activity(user_id: int) -> None:
+    user = await User.objects.get_or_none(user_id=user_id)
+
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
 
     activity = await UserActivity.objects.get_or_none(user__user_id=user_id)
 

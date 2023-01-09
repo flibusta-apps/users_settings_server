@@ -1,7 +1,7 @@
 from typing import Optional, Union
 
-import orjson
 from fastapi import HTTPException, status
+import orjson
 from redis import asyncio as aioredis
 
 from app.models import User

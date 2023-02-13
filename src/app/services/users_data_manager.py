@@ -1,7 +1,7 @@
 from typing import Optional, Union
 
 from fastapi import HTTPException, status
-import orjson
+import ormsgpack
 from redis import asyncio as aioredis
 
 from app.models import User
@@ -18,7 +18,7 @@ class UsersDataManager:
 
     @classmethod
     def _get_cache_key(cls, user_id: int) -> str:
-        return f"user_{user_id}"
+        return f"user_v2_{user_id}"
 
     @classmethod
     async def _get_user_from_cache(
@@ -31,7 +31,7 @@ class UsersDataManager:
             if data is None:
                 return None
 
-            return UserDetail.parse_obj(orjson.loads(data))
+            return UserDetail.parse_obj(ormsgpack.unpackb(data))
 
         except aioredis.RedisError:
             return None
@@ -40,7 +40,7 @@ class UsersDataManager:
     async def _cache_user(cls, user: User, redis: aioredis.Redis) -> bool:
         try:
             key = cls._get_cache_key(user.id)
-            data = orjson.dumps(user.dict())
+            data = ormsgpack.packb(user.dict())
             await redis.set(key, data)
             return True
         except aioredis.RedisError:

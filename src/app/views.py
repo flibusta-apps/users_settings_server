@@ -1,5 +1,6 @@
 from datetime import datetime
 
+from asyncpg.exceptions import UniqueViolationError
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.ormar import paginate
@@ -59,7 +60,10 @@ async def update_activity(user_id: int) -> None:
     activity = await UserActivity.objects.get_or_none(user__user_id=user_id)
 
     if activity is None:
-        await UserActivity.objects.create(user=user.id, updated=datetime.now())
+        try:
+            await UserActivity.objects.create(user=user.id, updated=datetime.now())
+        except UniqueViolationError:
+            pass
         return
 
     activity.updated = datetime.now()

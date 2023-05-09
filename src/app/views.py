@@ -1,7 +1,8 @@
 from datetime import datetime
 
-from asyncpg.exceptions import UniqueViolationError
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+
+from asyncpg.exceptions import UniqueViolationError
 from fastapi_pagination import Page, Params
 from fastapi_pagination.ext.ormar import paginate
 from redis import asyncio as aioredis
@@ -16,6 +17,7 @@ from app.serializers import (
     UserUpdate,
 )
 from app.services.users_data_manager import UsersDataManager
+
 
 users_router = APIRouter(
     prefix="/users", tags=["users"], dependencies=[Depends(check_token)]

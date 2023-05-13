@@ -5,6 +5,6 @@ from core.app import start_app
 from core.config import env_config
 
 
-sentry_sdk.init(dsn=env_config.SENTRY_SDN)
+sentry_sdk.init(dsn=env_config.SENTRY_DSN)
 
 app = SentryAsgiMiddleware(start_app())

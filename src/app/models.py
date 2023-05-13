@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import cast
 
 import ormar
 
@@ -14,22 +15,22 @@ class Language(ormar.Model):
     class Meta(BaseMeta):
         tablename = "languages"
 
-    id: int = ormar.Integer(primary_key=True)  # type: ignore
-    label: str = ormar.String(max_length=16)  # type: ignore
-    code: str = ormar.String(max_length=4, unique=True)  # type: ignore
+    id: int = cast(int, ormar.Integer(primary_key=True))
+    label: str = cast(str, ormar.String(max_length=16))
+    code: str = cast(str, ormar.String(max_length=4, unique=True))
 
 
 class User(ormar.Model):
     class Meta(BaseMeta):
         tablename = "user_settings"
 
-    id: int = ormar.Integer(primary_key=True)  # type: ignore
+    id: int = cast(int, ormar.Integer(primary_key=True))
 
-    user_id: int = ormar.BigInteger(unique=True)  # type: ignore
-    last_name: str = ormar.String(max_length=64)  # type: ignore
-    first_name: str = ormar.String(max_length=64)  # type: ignore
-    username: str = ormar.String(max_length=32)  # type: ignore
-    source: str = ormar.String(max_length=32)  # type: ignore
+    user_id: int = cast(int, ormar.BigInteger(unique=True))
+    last_name: str = cast(str, ormar.String(max_length=64))
+    first_name: str = cast(str, ormar.String(max_length=64))
+    username: str = cast(str, ormar.String(max_length=32))
+    source: str = cast(str, ormar.String(max_length=32))
 
     allowed_langs = ormar.ManyToMany(Language)
 
@@ -38,9 +39,18 @@ class UserActivity(ormar.Model):
     class Meta(BaseMeta):
         tablename = "user_activity"
 
-    id: int = ormar.Integer(primary_key=True)  # type: ignore
+    id: int = cast(int, ormar.Integer(primary_key=True))
 
     user: User = ormar.ForeignKey(
         User, nullable=False, unique=True, related_name="last_activity"
     )
-    updated: datetime = ormar.DateTime(timezone=False)  # type: ignore
+    updated: datetime = cast(datetime, ormar.DateTime(timezone=False))
+
+
+class ChatDonateNotification(ormar.Model):
+    class Meta(BaseMeta):
+        tablename = "chat_donate_notifications"
+
+    id: int = cast(int, ormar.BigInteger(primary_key=True))
+    chat_id: int = cast(int, ormar.BigInteger(unique=True))
+    sended: datetime = cast(datetime, ormar.DateTime(timezone=False))

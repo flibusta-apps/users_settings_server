@@ -17,7 +17,7 @@ class EnvConfig(BaseSettings):
     REDIS_DB: int
     REDIS_PASSWORD: Optional[str]
 
-    SENTRY_SDN: str
+    SENTRY_DSN: str
 
 
 env_config = EnvConfig()

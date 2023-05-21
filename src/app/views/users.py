@@ -8,10 +8,8 @@ from fastapi_pagination.ext.ormar import paginate
 from redis import asyncio as aioredis
 
 from app.depends import check_token
-from app.models import Language, User, UserActivity
+from app.models import User, UserActivity
 from app.serializers import (
-    CreateLanguage,
-    LanguageDetail,
     UserCreateOrUpdate,
     UserDetail,
     UserUpdate,
@@ -70,36 +68,3 @@ async def update_activity(user_id: int) -> None:
 
     activity.updated = datetime.now()
     await activity.update()
-
-
-languages_router = APIRouter(
-    prefix="/languages", tags=["languages"], dependencies=[Depends(check_token)]
-)
-
-
-@languages_router.get("/", response_model=list[LanguageDetail])
-async def get_languages():
-    return await Language.objects.all()
-
-
-@languages_router.get("/{code}", response_model=LanguageDetail)
-async def get_language(code: str):
-    language = await Language.objects.get_or_none(code=code)
-
-    if language is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-
-    return language
-
-
-@languages_router.post("/", response_model=LanguageDetail)
-async def create_language(data: CreateLanguage):
-    return await Language.objects.create(**data.dict())
-
-
-healthcheck_router = APIRouter(tags=["healthcheck"])
-
-
-@healthcheck_router.get("/healthcheck")
-async def healthcheck():
-    return "Ok!"

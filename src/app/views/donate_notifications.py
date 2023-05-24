@@ -31,7 +31,7 @@ async def is_need_send(chat_id: int) -> bool:
 @donation_notifications_router.post("/{chat_id}")
 async def mark_sended(chat_id: int):
     notification, created = await ChatDonateNotification.objects.get_or_create(
-        _default={"sended": datetime.now()}, chat_id=chat_id
+        {"sended": datetime.now()}, chat_id=chat_id
     )
 
     if created:

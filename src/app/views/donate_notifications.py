@@ -6,7 +6,7 @@ from app.depends import check_token
 from app.models import ChatDonateNotification
 
 
-NOTIFICATION_DELTA_DAYS = 30
+NOTIFICATION_DELTA_DAYS = 60
 
 
 donation_notifications_router = APIRouter(

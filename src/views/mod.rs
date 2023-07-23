@@ -1,13 +1,17 @@
-use axum::{Router, response::Response, http::{StatusCode, self, Request}, middleware::{Next, self}};
+use axum::{Router, response::Response, http::{StatusCode, self, Request}, middleware::{Next, self}, Extension};
 use tower_http::trace::{TraceLayer, self};
 use tracing::Level;
+use std::sync::Arc;
 
-use crate::config::CONFIG;
+use crate::{config::CONFIG, db::get_prisma_client, prisma::PrismaClient};
 
 pub mod users;
 pub mod pagination;
 pub mod languages;
 pub mod donate_notifications;
+
+
+pub type Database = Extension<Arc<PrismaClient>>;
 
 
 async fn auth<B>(req: Request<B>, next: Next<B>) -> Result<Response, StatusCode> {
@@ -29,7 +33,9 @@ async fn auth<B>(req: Request<B>, next: Next<B>) -> Result<Response, StatusCode>
 }
 
 
-pub fn get_router() -> Router {
+pub async fn get_router() -> Router {
+    let client = Arc::new(get_prisma_client().await);
+
     Router::new()
         .nest("/users/", users::get_router())
         .nest("/languages/", languages::get_router())
@@ -42,4 +48,5 @@ pub fn get_router() -> Router {
                 .on_response(trace::DefaultOnResponse::new()
                     .level(Level::INFO)),
         )
+        .layer(Extension(client))
 }

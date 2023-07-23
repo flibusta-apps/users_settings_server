@@ -1,17 +1,18 @@
 use axum::{Router, response::IntoResponse, routing::{get, post}, extract::Path, Json, http::StatusCode};
 use chrono::Duration;
 
-use crate::{prisma::chat_donate_notifications, db::get_prisma_client};
+use crate::prisma::chat_donate_notifications;
+
+use super::Database;
 
 
 async fn is_need_send(
-    Path(chat_id): Path<i64>
+    Path(chat_id): Path<i64>,
+    db: Database
 ) -> impl IntoResponse {
     const NOTIFICATION_DELTA_DAYS: i64 = 60;
 
-    let client = get_prisma_client().await;
-
-    let notification = client.chat_donate_notifications()
+    let notification = db.chat_donate_notifications()
         .find_unique(chat_donate_notifications::chat_id::equals(chat_id))
         .exec()
         .await
@@ -31,11 +32,10 @@ async fn is_need_send(
 
 
 async fn mark_sended(
-    Path(chat_id): Path<i64>
+    Path(chat_id): Path<i64>,
+    db: Database
 ) -> impl IntoResponse {
-    let client = get_prisma_client().await;
-
-    let _ = client.chat_donate_notifications()
+    let _ = db.chat_donate_notifications()
         .upsert(
             chat_donate_notifications::chat_id::equals(chat_id),
             chat_donate_notifications::create(

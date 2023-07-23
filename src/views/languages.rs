@@ -1,7 +1,8 @@
 use axum::{Router, response::IntoResponse, routing::get, Json, extract::Path, http::StatusCode};
 use serde::Serialize;
 
-use crate::{prisma::language, db::get_prisma_client};
+use crate::prisma::language;
+use super::Database;
 
 
 #[derive(Serialize)]
@@ -25,10 +26,10 @@ impl From<language::Data> for LanguageDetail {
 }
 
 
-async fn get_languages() -> impl IntoResponse {
-    let client = get_prisma_client().await;
-
-    let languages: Vec<LanguageDetail> = client.language()
+async fn get_languages(
+    db: Database
+) -> impl IntoResponse {
+    let languages: Vec<LanguageDetail> = db.language()
         .find_many(vec![])
         .exec()
         .await
@@ -42,11 +43,10 @@ async fn get_languages() -> impl IntoResponse {
 
 
 async fn get_language_by_code(
-    Path(code): Path<String>
+    Path(code): Path<String>,
+    db: Database
 ) -> impl IntoResponse {
-    let client = get_prisma_client().await;
-
-    let language = client.language()
+    let language = db.language()
         .find_unique(language::code::equals(code))
         .exec()
         .await

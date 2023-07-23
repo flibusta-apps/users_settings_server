@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 
-use crate::{prisma::{user_settings, language, language_to_user}, db::get_prisma_client};
+use crate::{prisma::{user_settings, language, language_to_user}, views::Database};
 
 
 pub async fn update_languages(
     user: user_settings::Data,
-    new_langs: Vec<String>
+    new_langs: Vec<String>,
+    db: Database
 ) {
-    let client = get_prisma_client().await;
-
     // Delete
     {
         let need_delete: Vec<_> = user.languages().unwrap()
@@ -21,7 +20,7 @@ pub async fn update_languages(
             .map(|(id, _)| id)
             .collect();
 
-        let _ = client.language_to_user()
+        let _ = db.language_to_user()
             .delete_many(
                 vec![language_to_user::id::in_vec(need_delete)]
             )
@@ -31,7 +30,7 @@ pub async fn update_languages(
 
     // Create
     {
-        let languages: HashMap<_, _> = client.language()
+        let languages: HashMap<_, _> = db.language()
             .find_many(vec![])
             .exec()
             .await
@@ -51,7 +50,7 @@ pub async fn update_languages(
             .map(|code| *languages.get(&code).unwrap())
             .collect();
 
-        let _ = client.language_to_user()
+        let _ = db.language_to_user()
         .create_many(
             need_create
                 .iter()

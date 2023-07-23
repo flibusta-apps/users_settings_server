@@ -2,27 +2,26 @@ pub mod serializers;
 pub mod utils;
 
 use axum::{Router, response::IntoResponse, routing::{get, post}, extract::{Query, Path, self}, Json, http::StatusCode};
-use crate::{prisma::{user_settings, language_to_user, user_activity}, db::get_prisma_client};
+use crate::prisma::{user_settings, language_to_user, user_activity};
 
 use self::{serializers::{UserDetail, CreateOrUpdateUserData}, utils::update_languages};
 
-use super::pagination::{Pagination, Page};
+use super::{pagination::{Pagination, Page}, Database};
 
 
 async fn get_users(
-    pagination: Query<Pagination>
+    pagination: Query<Pagination>,
+    db: Database
 ) -> impl IntoResponse {
     let pagination: Pagination = pagination.0;
 
-    let client = get_prisma_client().await;
-
-    let users_count = client.user_settings()
+    let users_count = db.user_settings()
         .count(vec![])
         .exec()
         .await
         .unwrap();
 
-    let users: Vec<UserDetail> = client.user_settings()
+    let users: Vec<UserDetail> = db.user_settings()
         .find_many(vec![])
         .with(
             user_settings::languages::fetch(vec![])
@@ -49,11 +48,10 @@ async fn get_users(
 
 
 async fn get_user(
-    Path(user_id): Path<i64>
+    Path(user_id): Path<i64>,
+    db: Database
 ) -> impl IntoResponse {
-    let client = get_prisma_client().await;
-
-    let user = client.user_settings()
+    let user = db.user_settings()
         .find_unique(user_settings::user_id::equals(user_id))
         .with(
             user_settings::languages::fetch(vec![])
@@ -74,11 +72,10 @@ async fn get_user(
 
 
 async fn create_or_update_user(
-    extract::Json(data): extract::Json<CreateOrUpdateUserData>
+    db: Database,
+    extract::Json(data): extract::Json<CreateOrUpdateUserData>,
 ) -> impl IntoResponse {
-    let client = get_prisma_client().await;
-
-    let user = client.user_settings()
+    let user = db.user_settings()
         .upsert(
             user_settings::user_id::equals(data.user_id),
             user_settings::create(
@@ -107,9 +104,9 @@ async fn create_or_update_user(
         .unwrap();
 
     let user_id = user.id;
-    update_languages(user, data.allowed_langs).await;
+    update_languages(user, data.allowed_langs, db.clone()).await;
 
-    let user = client.user_settings()
+    let user = db.user_settings()
         .find_unique(user_settings::id::equals(user_id))
         .with(
             user_settings::languages::fetch(vec![])
@@ -128,10 +125,9 @@ async fn create_or_update_user(
 
 async fn update_activity(
     Path(user_id): Path<i64>,
+    db: Database
 ) -> impl IntoResponse {
-    let client = get_prisma_client().await;
-
-    let user = client.user_settings()
+    let user = db.user_settings()
         .find_unique(user_settings::user_id::equals(user_id))
         .exec()
         .await
@@ -142,7 +138,7 @@ async fn update_activity(
         None => return StatusCode::NOT_FOUND.into_response(),
     };
 
-    let _ = client.user_activity()
+    let _ = db.user_activity()
         .upsert(
             user_activity::user_id::equals(user.id),
             user_activity::create(

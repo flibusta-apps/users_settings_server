@@ -1,0 +1,25 @@
+[package]
+name = "users_settings_server"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+members = [
+    "prisma-cli"
+]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+once_cell = "1.18.0"
+
+prisma-client-rust = { git = "https://github.com/Brendonovich/prisma-client-rust", tag = "0.6.8", features = ["postgresql"] }
+serde = { version = "1.0.163", features = ["derive"] }
+
+tokio = { version = "1.28.2", features = ["full"] }
+axum = { version = "0.6.18", features = ["json"] }
+log = "0.4.18"
+env_logger = "0.10.0"
+chrono = "0.4.26"
+sentry = "0.31.5"

@@ -9,6 +9,8 @@ use std::net::SocketAddr;
 async fn start_app() {
     let app = views::get_router();
 
+    env_logger::init();
+
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
 
     log::info!("Start webserver...");
@@ -27,7 +29,6 @@ async fn main() {
         .init();
 
     let _guard = sentry::init(config::CONFIG.sentry_dsn.clone());
-    env_logger::init();
 
     start_app().await;
 }

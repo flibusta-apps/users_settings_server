@@ -3,7 +3,7 @@ pub mod prisma;
 pub mod views;
 pub mod db;
 
-use tracing::{info};
+use tracing::info;
 
 use std::net::SocketAddr;
 

@@ -1,4 +1,5 @@
-use axum::{Router, response::Response, http::{StatusCode, self, Request}, middleware::{Next, self}, Extension};
+use axum::{Router, response::Response, http::{StatusCode, self, Request}, middleware::{Next, self}, Extension, routing::get};
+use axum_prometheus::PrometheusMetricLayer;
 use tower_http::trace::{TraceLayer, self};
 use tracing::Level;
 use std::sync::Arc;
@@ -36,11 +37,22 @@ async fn auth<B>(req: Request<B>, next: Next<B>) -> Result<Response, StatusCode>
 pub async fn get_router() -> Router {
     let client = Arc::new(get_prisma_client().await);
 
-    Router::new()
+    let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
+
+    let app_router = Router::new()
         .nest("/users/", users::get_router())
         .nest("/languages/", languages::get_router())
         .nest("/donate_notifications/", donate_notifications::get_router())
         .layer(middleware::from_fn(auth))
+        .layer(Extension(client))
+        .layer(prometheus_layer);
+
+    let metric_router = Router::new()
+        .route("/metrics", get(|| async move { metric_handle.render() }));
+
+    Router::new()
+        .nest("/", app_router)
+        .nest("/", metric_router)
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(trace::DefaultMakeSpan::new()
@@ -48,5 +60,4 @@ pub async fn get_router() -> Router {
                 .on_response(trace::DefaultOnResponse::new()
                     .level(Level::INFO)),
         )
-        .layer(Extension(client))
 }

@@ -9,7 +9,7 @@ use std::net::SocketAddr;
 async fn start_app() {
     let app = views::get_router();
 
-    env_logger::init();
+    // env_logger::init();
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8080));
 

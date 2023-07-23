@@ -23,3 +23,7 @@ log = "0.4.18"
 env_logger = "0.10.0"
 chrono = "0.4.26"
 sentry = "0.31.5"
+
+tracing = "0.1.37"
+tracing-subscriber = { version = "0.3.17", features = ["env-filter"]}
+tower-http = { version = "0.4.3", features = ["trace"] }

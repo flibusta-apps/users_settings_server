@@ -1,4 +1,6 @@
 use axum::{Router, response::Response, http::{StatusCode, self, Request}, middleware::{Next, self}};
+use tower_http::trace::{TraceLayer, self};
+use tracing::Level;
 
 use crate::config::CONFIG;
 
@@ -33,4 +35,11 @@ pub fn get_router() -> Router {
         .nest("/languages/", languages::get_router())
         .nest("/donate_notifications/", donate_notifications::get_router())
         .layer(middleware::from_fn(auth))
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(trace::DefaultMakeSpan::new()
+                    .level(Level::INFO))
+                .on_response(trace::DefaultOnResponse::new()
+                    .level(Level::INFO)),
+        )
 }

@@ -23,7 +23,7 @@ impl Config {
         Config {
             api_key: get_env("API_KEY"),
 
-            postgres_user: get_env("POSGRES_USER"),
+            postgres_user: get_env("POSTGRES_USER"),
             postgres_password: get_env("POSTGRES_PASSWORD"),
             postgres_host: get_env("POSTGRES_HOST"),
             postgres_port: get_env("POSTGRES_PORT").parse().unwrap(),

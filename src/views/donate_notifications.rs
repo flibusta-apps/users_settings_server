@@ -20,10 +20,7 @@ async fn is_need_send(
 
     match notification {
         Some(notification) => {
-            let now = chrono::offset::Local::now().naive_local();
-            let check_date = now - Duration::days(NOTIFICATION_DELTA_DAYS);
-            let result = notification.sended.naive_local() < check_date;
-
+            let result = notification.sended.naive_local() + Duration::days(NOTIFICATION_DELTA_DAYS) <= chrono::offset::Local::now().naive_local();
             Json(result).into_response()
         },
         None => Json(true).into_response(),
@@ -48,7 +45,9 @@ async fn mark_sended(
                     chrono::offset::Local::now().into()
                 )
             ]
-        );
+        )
+        .exec()
+        .await;
 
     StatusCode::OK
 }

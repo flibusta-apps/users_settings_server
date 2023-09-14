@@ -1,7 +1,7 @@
 pub mod serializers;
 pub mod utils;
 
-use axum::{Router, response::IntoResponse, routing::{get, post}, extract::{Query, Path, self}, Json, http::StatusCode};
+use axum::{Router, response::IntoResponse, routing::{get, post}, extract::{Query, Path}, Json, http::StatusCode};
 use crate::prisma::{user_settings, language_to_user, user_activity};
 
 use self::{serializers::{UserDetail, CreateOrUpdateUserData}, utils::update_languages};
@@ -73,7 +73,7 @@ async fn get_user(
 
 async fn create_or_update_user(
     db: Database,
-    extract::Json(data): extract::Json<CreateOrUpdateUserData>,
+    Json(data): Json<CreateOrUpdateUserData>,
 ) -> impl IntoResponse {
     let user = db.user_settings()
         .upsert(

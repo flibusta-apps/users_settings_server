@@ -28,7 +28,7 @@ async fn is_need_send(
 }
 
 
-async fn mark_sended(
+async fn mark_sent(
     Path(chat_id): Path<i64>,
     db: Database
 ) -> impl IntoResponse {
@@ -56,5 +56,5 @@ async fn mark_sended(
 pub fn get_router() -> Router {
     Router::new()
         .route("/:chat_id/is_need_send", get(is_need_send))
-        .route("/:chat_id", post(mark_sended))
+        .route("/:chat_id", post(mark_sent))
 }

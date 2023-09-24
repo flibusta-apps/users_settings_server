@@ -1,22 +1,27 @@
-use axum::{Router, response::Response, http::{StatusCode, self, Request}, middleware::{Next, self}, Extension, routing::get};
+use axum::{
+    http::{self, Request, StatusCode},
+    middleware::{self, Next},
+    response::Response,
+    routing::get,
+    Extension, Router,
+};
 use axum_prometheus::PrometheusMetricLayer;
-use tower_http::trace::{TraceLayer, self};
-use tracing::Level;
 use std::sync::Arc;
+use tower_http::trace::{self, TraceLayer};
+use tracing::Level;
 
 use crate::{config::CONFIG, db::get_prisma_client, prisma::PrismaClient};
 
-pub mod users;
-pub mod pagination;
-pub mod languages;
 pub mod donate_notifications;
-
+pub mod languages;
+pub mod pagination;
+pub mod users;
 
 pub type Database = Extension<Arc<PrismaClient>>;
 
-
 async fn auth<B>(req: Request<B>, next: Next<B>) -> Result<Response, StatusCode> {
-    let auth_header = req.headers()
+    let auth_header = req
+        .headers()
         .get(http::header::AUTHORIZATION)
         .and_then(|header| header.to_str().ok());
 
@@ -33,7 +38,6 @@ async fn auth<B>(req: Request<B>, next: Next<B>) -> Result<Response, StatusCode>
     Ok(next.run(req).await)
 }
 
-
 pub async fn get_router() -> Router {
     let client = Arc::new(get_prisma_client().await);
 
@@ -47,17 +51,15 @@ pub async fn get_router() -> Router {
         .layer(Extension(client))
         .layer(prometheus_layer);
 
-    let metric_router = Router::new()
-        .route("/metrics", get(|| async move { metric_handle.render() }));
+    let metric_router =
+        Router::new().route("/metrics", get(|| async move { metric_handle.render() }));
 
     Router::new()
         .nest("/", app_router)
         .nest("/", metric_router)
         .layer(
             TraceLayer::new_for_http()
-                .make_span_with(trace::DefaultMakeSpan::new()
-                    .level(Level::INFO))
-                .on_response(trace::DefaultOnResponse::new()
-                    .level(Level::INFO)),
+                .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
+                .on_response(trace::DefaultOnResponse::new().level(Level::INFO)),
         )
 }

@@ -1,7 +1,6 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::prisma::{user_settings, language};
-
+use crate::prisma::{language, user_settings};
 
 #[derive(Serialize)]
 pub struct UserLanguage {
@@ -10,17 +9,15 @@ pub struct UserLanguage {
     pub code: String,
 }
 
-
 impl From<language::Data> for UserLanguage {
     fn from(value: language::Data) -> Self {
         Self {
             id: value.id,
             label: value.label,
-            code: value.code
+            code: value.code,
         }
     }
 }
-
 
 #[derive(Serialize)]
 pub struct UserDetail {
@@ -30,14 +27,14 @@ pub struct UserDetail {
     pub first_name: String,
     pub username: String,
     pub source: String,
-    pub allowed_langs: Vec<UserLanguage>
+    pub allowed_langs: Vec<UserLanguage>,
 }
-
 
 impl From<user_settings::Data> for UserDetail {
     fn from(value: user_settings::Data) -> Self {
         let allowed_langs: Vec<UserLanguage> = value
-            .languages.unwrap()
+            .languages
+            .unwrap()
             .into_iter()
             .map(|item| *item.language.unwrap())
             .map(|item| item.into())
@@ -50,7 +47,7 @@ impl From<user_settings::Data> for UserDetail {
             first_name: value.first_name,
             username: value.username,
             source: value.source,
-            allowed_langs
+            allowed_langs,
         }
     }
 }
@@ -62,5 +59,5 @@ pub struct CreateOrUpdateUserData {
     pub first_name: String,
     pub username: String,
     pub source: String,
-    pub allowed_langs: Vec<String>
+    pub allowed_langs: Vec<String>,
 }

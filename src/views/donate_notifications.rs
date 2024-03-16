@@ -1,5 +1,5 @@
 use axum::{
-    extract::Path,
+    extract::{Path, Query},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
@@ -11,8 +11,13 @@ use crate::prisma::chat_donate_notifications;
 
 use super::Database;
 
-async fn is_need_send(Path(chat_id): Path<i64>, db: Database) -> impl IntoResponse {
-    const NOTIFICATION_DELTA_DAYS: i64 = 60;
+async fn is_need_send(
+    Path(chat_id): Path<i64>,
+    Query(is_private): Query<String>,
+    db: Database,
+) -> impl IntoResponse {
+    const NOTIFICATION_DELTA_DAYS_PRIVATE: i64 = 60;
+    const NOTIFICATION_DELTA_DAYS: i64 = 7;
 
     let notification = db
         .chat_donate_notifications()
@@ -21,10 +26,15 @@ async fn is_need_send(Path(chat_id): Path<i64>, db: Database) -> impl IntoRespon
         .await
         .unwrap();
 
+    let delta_days = if is_private == "true" {
+        NOTIFICATION_DELTA_DAYS_PRIVATE
+    } else {
+        NOTIFICATION_DELTA_DAYS
+    };
+
     match notification {
         Some(notification) => {
-            let result = notification.sended.naive_local()
-                + Duration::days(NOTIFICATION_DELTA_DAYS)
+            let result = notification.sended.naive_local() + Duration::days(delta_days)
                 <= chrono::offset::Local::now().naive_local();
             Json(result).into_response()
         }

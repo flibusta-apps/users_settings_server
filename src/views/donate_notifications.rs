@@ -6,14 +6,20 @@ use axum::{
     Json, Router,
 };
 use chrono::Duration;
+use serde::Deserialize;
 
 use crate::prisma::chat_donate_notifications;
 
 use super::Database;
 
+#[derive(Deserialize)]
+struct IsNeedSendQuery {
+    is_private: bool,
+}
+
 async fn is_need_send(
     Path(chat_id): Path<i64>,
-    Query(is_private): Query<String>,
+    query: Query<IsNeedSendQuery>,
     db: Database,
 ) -> impl IntoResponse {
     const NOTIFICATION_DELTA_DAYS_PRIVATE: i64 = 60;
@@ -26,7 +32,7 @@ async fn is_need_send(
         .await
         .unwrap();
 
-    let delta_days = if is_private == "true" {
+    let delta_days = if query.is_private {
         NOTIFICATION_DELTA_DAYS_PRIVATE
     } else {
         NOTIFICATION_DELTA_DAYS

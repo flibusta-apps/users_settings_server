@@ -792,9 +792,9 @@ dependencies = [
 
 [[package]]
 name = "h2"
-version = "0.3.24"
+version = "0.3.26"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb2c4422095b67ee78da96fbb51a4cc413b3b25883c7717ff7ca1ab31022c9c9"
+checksum = "81fe527a889e1532da5c525686d96d4c2e74cdd345badf8dfef9f6b39dd5f5e8"
 dependencies = [
  "bytes",
  "fnv",
@@ -1776,8 +1776,8 @@ dependencies = [
 
 [[package]]
 name = "prisma-client-rust-cli"
-version = "0.6.10"
-source = "git+https://github.com/Brendonovich/prisma-client-rust?tag=0.6.10#948642d876c342f5925695bc3e487df6a02af9b2"
+version = "0.6.11"
+source = "git+https://github.com/Brendonovich/prisma-client-rust?tag=0.6.11#3ac68d0052533d3ae0332d93a56a8ad169c2ee18"
 dependencies = [
  "directories",
  "flate2",
@@ -1796,8 +1796,8 @@ dependencies = [
 
 [[package]]
 name = "prisma-client-rust-sdk"
-version = "0.6.10"
-source = "git+https://github.com/Brendonovich/prisma-client-rust?tag=0.6.10#948642d876c342f5925695bc3e487df6a02af9b2"
+version = "0.6.11"
+source = "git+https://github.com/Brendonovich/prisma-client-rust?tag=0.6.11#3ac68d0052533d3ae0332d93a56a8ad169c2ee18"
 dependencies = [
  "convert_case",
  "dml",

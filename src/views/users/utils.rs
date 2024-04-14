@@ -13,8 +13,8 @@ pub async fn update_languages(user: user_settings::Data, new_langs: Vec<String>,
             .unwrap()
             .iter()
             .map(|item| {
-                let language::Data { id, code, .. } = *item.clone().language.unwrap();
-                (id, code)
+                let language::Data { code, .. } = *item.clone().language.unwrap();
+                (item.id, code)
             })
             .filter(|(_, code)| !new_langs.contains(code))
             .map(|(id, _)| id)

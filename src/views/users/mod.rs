@@ -52,7 +52,7 @@ async fn get_user(Path(user_id): Path<i64>, db: Database) -> impl IntoResponse {
         .unwrap();
 
     if user.is_none() {
-        return StatusCode::NOT_FOUND.into_response();
+        return StatusCode::NO_CONTENT.into_response();
     }
 
     Json::<UserDetail>(user.unwrap().into()).into_response()

@@ -8,9 +8,12 @@ use axum::{
 use chrono::Duration;
 use serde::Deserialize;
 
-use crate::prisma::chat_donate_notifications;
-
 use super::Database;
+
+#[derive(sqlx::FromRow)]
+struct ChatDonateNotification {
+    pub sended: chrono::NaiveDateTime,
+}
 
 #[derive(Deserialize)]
 struct IsNeedSendQuery {
@@ -25,12 +28,14 @@ async fn is_need_send(
     const NOTIFICATION_DELTA_DAYS_PRIVATE: i64 = 60;
     const NOTIFICATION_DELTA_DAYS: i64 = 7;
 
-    let notification = db
-        .chat_donate_notifications()
-        .find_unique(chat_donate_notifications::chat_id::equals(chat_id))
-        .exec()
-        .await
-        .unwrap();
+    let notification = sqlx::query_as!(
+        ChatDonateNotification,
+        r#"SELECT sended FROM chat_donate_notifications WHERE chat_id = $1"#,
+        chat_id
+    )
+    .fetch_optional(&db.0)
+    .await
+    .unwrap();
 
     let delta_days = if query.is_private {
         NOTIFICATION_DELTA_DAYS_PRIVATE
@@ -40,7 +45,7 @@ async fn is_need_send(
 
     match notification {
         Some(notification) => {
-            let result = notification.sended.naive_local() + Duration::days(delta_days)
+            let result = notification.sended + Duration::days(delta_days)
                 <= chrono::offset::Local::now().naive_local();
             Json(result).into_response()
         }
@@ -49,17 +54,17 @@ async fn is_need_send(
 }
 
 async fn mark_sent(Path(chat_id): Path<i64>, db: Database) -> impl IntoResponse {
-    let _ = db
-        .chat_donate_notifications()
-        .upsert(
-            chat_donate_notifications::chat_id::equals(chat_id),
-            chat_donate_notifications::create(chat_id, chrono::offset::Local::now().into(), vec![]),
-            vec![chat_donate_notifications::sended::set(
-                chrono::offset::Local::now().into(),
-            )],
-        )
-        .exec()
-        .await;
+    sqlx::query_as!(
+        ChatDonateNotification,
+        r#"INSERT INTO chat_donate_notifications (chat_id, sended) VALUES ($1, $2)
+        ON CONFLICT (chat_id) DO UPDATE SET sended = EXCLUDED.sended
+        RETURNING sended"#,
+        chat_id,
+        chrono::offset::Local::now().naive_local()
+    )
+    .fetch_one(&db.0)
+    .await
+    .unwrap();
 
     StatusCode::OK
 }

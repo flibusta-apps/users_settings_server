@@ -6,18 +6,19 @@ use axum::{
     Extension, Router,
 };
 use axum_prometheus::PrometheusMetricLayer;
+use sqlx::PgPool;
 use std::sync::Arc;
 use tower_http::trace::{self, TraceLayer};
 use tracing::Level;
 
-use crate::{config::CONFIG, db::get_prisma_client, prisma::PrismaClient};
+use crate::{config::CONFIG, db::get_prisma_client};
 
 pub mod donate_notifications;
 pub mod languages;
 pub mod pagination;
 pub mod users;
 
-pub type Database = Extension<Arc<PrismaClient>>;
+pub type Database = Extension<PgPool>;
 
 async fn auth(req: Request<axum::body::Body>, next: Next) -> Result<Response, StatusCode> {
     let auth_header = req

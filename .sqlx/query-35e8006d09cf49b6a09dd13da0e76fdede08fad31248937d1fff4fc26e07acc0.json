@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO users_languages (\"user\", language)\n        SELECT $1, id\n        FROM languages\n        WHERE code = ANY($2)\n        ON CONFLICT DO NOTHING\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "TextArray"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "35e8006d09cf49b6a09dd13da0e76fdede08fad31248937d1fff4fc26e07acc0"
+}

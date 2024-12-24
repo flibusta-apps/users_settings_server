@@ -2,7 +2,7 @@ use crate::config::CONFIG;
 
 use sqlx::{postgres::PgPoolOptions, PgPool};
 
-pub async fn get_prisma_client() -> PgPool {
+pub async fn get_postgres_pool() -> PgPool {
     let database_url: String = format!(
         "postgresql://{}:{}@{}:{}/{}",
         CONFIG.postgres_user,

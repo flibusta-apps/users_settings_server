@@ -25,8 +25,7 @@ pub struct UserDetail {
     pub first_name: String,
     pub username: String,
     pub source: String,
-    #[serde(default)]
-    pub allowed_langs: Option<Vec<UserLanguage>>,
+    pub allowed_langs: Vec<UserLanguage>,
 }
 
 #[derive(Deserialize)]

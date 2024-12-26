@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(sqlx::FromRow, sqlx::Type, Serialize)]
+#[sqlx(type_name = "user_language_type")]
 pub struct UserLanguage {
     pub id: i32,
     pub label: String,

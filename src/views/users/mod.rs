@@ -39,12 +39,12 @@ async fn get_users(pagination: Query<Pagination>, db: Database) -> impl IntoResp
             user_settings.username,
             user_settings.source,
             COALESCE(
-                JSON_AGG(JSON_BUILD_OBJECT(
-                    'id', languages.id,
-                    'label', languages.label,
-                    'code', languages.code
-                )),
-                '[]'::JSON
+                ARRAY_AGG(ROW(
+                    languages.id,
+                    languages.label,
+                    languages.code
+                )::user_language_type),
+                ARRAY[]::user_language_type[]
             ) AS "allowed_langs!: Vec<UserLanguage>"
         FROM user_settings
         LEFT JOIN users_languages ON user_settings.id = users_languages.user
@@ -76,12 +76,12 @@ async fn get_user(Path(user_id): Path<i64>, db: Database) -> impl IntoResponse {
             user_settings.username,
             user_settings.source,
             COALESCE(
-                JSON_AGG(JSON_BUILD_OBJECT(
-                    'id', languages.id,
-                    'label', languages.label,
-                    'code', languages.code
-                )),
-                '[]'::JSON
+                ARRAY_AGG(ROW(
+                    languages.id,
+                    languages.label,
+                    languages.code
+                )::user_language_type),
+                ARRAY[]::user_language_type[]
             ) AS "allowed_langs!: Vec<UserLanguage>"
         FROM user_settings
         LEFT JOIN users_languages ON user_settings.id = users_languages.user
@@ -138,12 +138,12 @@ async fn create_or_update_user(
             user_settings.username,
             user_settings.source,
             COALESCE(
-                JSON_AGG(JSON_BUILD_OBJECT(
-                    'id', languages.id,
-                    'label', languages.label,
-                    'code', languages.code
-                )),
-                '[]'::JSON
+                ARRAY_AGG(ROW(
+                    languages.id,
+                    languages.label,
+                    languages.code
+                )::user_language_type),
+                ARRAY[]::user_language_type[]
             ) AS "allowed_langs!: Vec<UserLanguage>"
         FROM user_settings
         LEFT JOIN users_languages ON user_settings.id = users_languages.user

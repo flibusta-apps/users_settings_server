@@ -198,7 +198,7 @@ async fn update_activity(Path(user_id): Path<i64>, db: Database) -> impl IntoRes
 pub fn get_router() -> Router {
     Router::new()
         .route("/", get(get_users))
-        .route("/:user_id", get(get_user))
+        .route("/{user_id}", get(get_user))
         .route("/", post(create_or_update_user))
-        .route("/:user_id/update_activity", post(update_activity))
+        .route("/{user_id}/update_activity", post(update_activity))
 }

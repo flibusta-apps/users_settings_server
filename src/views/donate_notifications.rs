@@ -71,6 +71,6 @@ async fn mark_sent(Path(chat_id): Path<i64>, db: Database) -> impl IntoResponse 
 
 pub fn get_router() -> Router {
     Router::new()
-        .route("/:chat_id/is_need_send", get(is_need_send))
-        .route("/:chat_id", post(mark_sent))
+        .route("/{chat_id}/is_need_send", get(is_need_send))
+        .route("/{chat_id}", post(mark_sent))
 }

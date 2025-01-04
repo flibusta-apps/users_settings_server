@@ -38,5 +38,5 @@ async fn get_language_by_code(Path(code): Path<String>, db: Database) -> impl In
 pub fn get_router() -> Router {
     Router::new()
         .route("/", get(get_languages))
-        .route("/:code", get(get_language_by_code))
+        .route("/{code}", get(get_language_by_code))
 }

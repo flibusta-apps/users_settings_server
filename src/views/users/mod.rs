@@ -80,7 +80,7 @@ async fn get_user(Path(user_id): Path<i64>, db: Database) -> impl IntoResponse {
                     languages.id,
                     languages.label,
                     languages.code
-                )::user_language_type),
+                )::user_language_type) FILTER (WHERE languages.id IS NOT NULL),
                 ARRAY[]::user_language_type[]
             ) AS "allowed_langs!: Vec<UserLanguage>"
         FROM user_settings

@@ -5,17 +5,27 @@ use tracing::info;
 
 pub async fn get_postgres_pool() -> PgPool {
     let database_url: String = format!(
-        "postgresql://{}:{}@{}:{}/{}",
+        "postgresql://{}:{}@{}:{}/{}?application_name={}",
         CONFIG.postgres_user,
         CONFIG.postgres_password,
         CONFIG.postgres_host,
         CONFIG.postgres_port,
-        CONFIG.postgres_db
+        CONFIG.postgres_db,
+        CONFIG.application_name
+    );
+
+    info!(
+        "Creating Postgres pool (app_name={}, max_connections={}, acquire_timeout_sec={})",
+        CONFIG.application_name,
+        CONFIG.postgres_pool_max_connections,
+        CONFIG.postgres_pool_acquire_timeout_sec
     );
 
     let pool = PgPoolOptions::new()
-        .max_connections(10)
-        .acquire_timeout(std::time::Duration::from_secs(300))
+        .max_connections(CONFIG.postgres_pool_max_connections)
+        .acquire_timeout(std::time::Duration::from_secs(
+            CONFIG.postgres_pool_acquire_timeout_sec,
+        ))
         .connect(&database_url)
         .await
         .unwrap();

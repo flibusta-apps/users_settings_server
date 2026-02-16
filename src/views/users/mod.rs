@@ -1,18 +1,16 @@
 pub mod serializers;
 pub mod utils;
 
+use self::{
+    serializers::{CreateOrUpdateUserData, SimpleUser, UserDetail, UserLanguage},
+    utils::update_languages,
+};
 use axum::{
     extract::{Path, Query},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
     Json, Router,
-};
-use serializers::SimpleUser;
-
-use self::{
-    serializers::{CreateOrUpdateUserData, UserDetail, UserLanguage},
-    utils::update_languages,
 };
 
 use super::{
@@ -38,6 +36,7 @@ async fn get_users(pagination: Query<Pagination>, db: Database) -> impl IntoResp
             user_settings.first_name,
             user_settings.username,
             user_settings.source,
+            user_settings.default_search,
             COALESCE(
                 ARRAY_AGG(ROW(
                     languages.id,
@@ -75,6 +74,7 @@ async fn get_user(Path(user_id): Path<i64>, db: Database) -> impl IntoResponse {
             user_settings.first_name,
             user_settings.username,
             user_settings.source,
+            user_settings.default_search,
             COALESCE(
                 ARRAY_AGG(ROW(
                     languages.id,
@@ -109,17 +109,18 @@ async fn create_or_update_user(
     let user = sqlx::query_as!(
         SimpleUser,
         r#"
-            INSERT INTO user_settings (user_id, last_name, first_name, username, source)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO user_settings (user_id, last_name, first_name, username, source, default_search)
+            VALUES ($1, $2, $3, $4, $5, $6)
             ON CONFLICT (user_id) DO UPDATE
-            SET last_name = $2, first_name = $3, username = $4, source = $5
-            RETURNING id, user_id, last_name, first_name, username, source
+            SET last_name = $2, first_name = $3, username = $4, source = $5, default_search = $6
+            RETURNING id, user_id, last_name, first_name, username, source, default_search
         "#,
         data.user_id,
         data.last_name,
         data.first_name,
         data.username,
         data.source,
+        data.default_search,
     )
     .fetch_one(&db.0)
     .await
@@ -137,6 +138,7 @@ async fn create_or_update_user(
             user_settings.first_name,
             user_settings.username,
             user_settings.source,
+            user_settings.default_search,
             COALESCE(
                 ARRAY_AGG(ROW(
                     languages.id,
@@ -164,7 +166,7 @@ async fn update_activity(Path(user_id): Path<i64>, db: Database) -> impl IntoRes
     let user = sqlx::query_as!(
         SimpleUser,
         r#"
-        SELECT id, user_id, last_name, first_name, username, source
+        SELECT id, user_id, last_name, first_name, username, source, default_search
         FROM user_settings
         WHERE user_id = $1
         "#,

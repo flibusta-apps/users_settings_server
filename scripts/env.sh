@@ -1,7 +1,8 @@
 #! /usr/bin/env sh
 
-response=`curl -X 'GET' "https://$VAULT_HOST/v1/$VAULT_SECRET_PATH" -s \
-  -H 'accept: application/json' \
-  -H "X-Vault-Token: $VAULT_TOKEN"`
+# Environment variables should be provided directly (e.g. via docker-compose, k8s, etc.)
+# Required: API_KEY, POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST, POSTGRES_PORT,
+#           POSTGRES_DB, SENTRY_DSN
+# Optional: POSTGRES_POOL_MAX_CONNECTIONS, POSTGRES_POOL_ACQUIRE_TIMEOUT_SEC, APPLICATION_NAME
 
-echo "$(echo "$response" | jq -r '.data.data | to_entries | map("\(.key)=\(.value)") | .[]')"
+env | grep -E '^(API_KEY|POSTGRES_|SENTRY_DSN|APPLICATION_NAME)=' || true

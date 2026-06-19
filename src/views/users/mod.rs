@@ -37,6 +37,7 @@ async fn get_users(pagination: Query<Pagination>, db: Database) -> impl IntoResp
             user_settings.username,
             user_settings.source,
             user_settings.default_search,
+            user_settings.file_name_lang,
             COALESCE(
                 ARRAY_AGG(ROW(
                     languages.id,
@@ -75,6 +76,7 @@ async fn get_user(Path(user_id): Path<i64>, db: Database) -> impl IntoResponse {
             user_settings.username,
             user_settings.source,
             user_settings.default_search,
+            user_settings.file_name_lang,
             COALESCE(
                 ARRAY_AGG(ROW(
                     languages.id,
@@ -106,14 +108,18 @@ async fn create_or_update_user(
     db: Database,
     Json(data): Json<CreateOrUpdateUserData>,
 ) -> impl IntoResponse {
+    let file_name_lang = data
+        .file_name_lang
+        .unwrap_or_else(|| "normalized".to_string());
+
     let user = sqlx::query_as!(
         SimpleUser,
         r#"
-            INSERT INTO user_settings (user_id, last_name, first_name, username, source, default_search)
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO user_settings (user_id, last_name, first_name, username, source, default_search, file_name_lang)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             ON CONFLICT (user_id) DO UPDATE
-            SET last_name = $2, first_name = $3, username = $4, source = $5, default_search = $6
-            RETURNING id, user_id, last_name, first_name, username, source, default_search
+            SET last_name = $2, first_name = $3, username = $4, source = $5, default_search = $6, file_name_lang = $7
+            RETURNING id, user_id, last_name, first_name, username, source, default_search, file_name_lang
         "#,
         data.user_id,
         data.last_name,
@@ -121,6 +127,7 @@ async fn create_or_update_user(
         data.username,
         data.source,
         data.default_search,
+        file_name_lang,
     )
     .fetch_one(&db.0)
     .await
@@ -139,6 +146,7 @@ async fn create_or_update_user(
             user_settings.username,
             user_settings.source,
             user_settings.default_search,
+            user_settings.file_name_lang,
             COALESCE(
                 ARRAY_AGG(ROW(
                     languages.id,
@@ -166,7 +174,7 @@ async fn update_activity(Path(user_id): Path<i64>, db: Database) -> impl IntoRes
     let user = sqlx::query_as!(
         SimpleUser,
         r#"
-        SELECT id, user_id, last_name, first_name, username, source, default_search
+        SELECT id, user_id, last_name, first_name, username, source, default_search, file_name_lang
         FROM user_settings
         WHERE user_id = $1
         "#,

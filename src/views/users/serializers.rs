@@ -17,6 +17,7 @@ pub struct SimpleUser {
     pub username: String,
     pub source: String,
     pub default_search: Option<String>,
+    pub file_name_lang: String,
 }
 
 #[derive(sqlx::FromRow, Serialize)]
@@ -28,6 +29,7 @@ pub struct UserDetail {
     pub username: String,
     pub source: String,
     pub default_search: Option<String>,
+    pub file_name_lang: String,
     pub allowed_langs: Vec<UserLanguage>,
 }
 
@@ -39,5 +41,6 @@ pub struct CreateOrUpdateUserData {
     pub username: String,
     pub source: String,
     pub default_search: Option<String>,
+    pub file_name_lang: Option<String>,
     pub allowed_langs: Vec<String>,
 }

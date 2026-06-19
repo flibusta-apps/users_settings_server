@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            INSERT INTO user_settings (user_id, last_name, first_name, username, source, default_search)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            ON CONFLICT (user_id) DO UPDATE\n            SET last_name = $2, first_name = $3, username = $4, source = $5, default_search = $6\n            RETURNING id, user_id, last_name, first_name, username, source, default_search\n        ",
+  "query": "\n            INSERT INTO user_settings (user_id, last_name, first_name, username, source, default_search, file_name_lang)\n            VALUES ($1, $2, $3, $4, $5, $6, $7)\n            ON CONFLICT (user_id) DO UPDATE\n            SET last_name = $2, first_name = $3, username = $4, source = $5, default_search = $6, file_name_lang = $7\n            RETURNING id, user_id, last_name, first_name, username, source, default_search, file_name_lang\n        ",
   "describe": {
     "columns": [
       {
@@ -37,11 +37,17 @@
         "ordinal": 6,
         "name": "default_search",
         "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "file_name_lang",
+        "type_info": "Varchar"
       }
     ],
     "parameters": {
       "Left": [
         "Int8",
+        "Varchar",
         "Varchar",
         "Varchar",
         "Varchar",
@@ -56,8 +62,9 @@
       false,
       false,
       false,
-      true
+      true,
+      false
     ]
   },
-  "hash": "9ce4bb739dd3e8e8b0b8be165c13524eee4e07fae9a979022319ba106f17effd"
+  "hash": "5ad2e045cb5868232b6a6c843cec0fb88cc535d9bd539449adaf4598105739f9"
 }

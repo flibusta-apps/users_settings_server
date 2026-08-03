@@ -1,6 +1,10 @@
-use crate::views::Database;
+use sqlx::{Postgres, Transaction};
 
-pub async fn update_languages(user: i32, new_langs: Vec<String>, db: Database) {
+pub async fn update_languages(
+    tx: &mut Transaction<'_, Postgres>,
+    user: i32,
+    new_langs: &[String],
+) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         DELETE FROM users_languages
@@ -9,11 +13,10 @@ pub async fn update_languages(user: i32, new_langs: Vec<String>, db: Database) {
         )
         "#,
         user,
-        &new_langs
+        new_langs
     )
-    .execute(&db.0)
-    .await
-    .unwrap();
+    .execute(&mut **tx)
+    .await?;
 
     sqlx::query!(
         r#"
@@ -21,12 +24,13 @@ pub async fn update_languages(user: i32, new_langs: Vec<String>, db: Database) {
         SELECT $1, id
         FROM languages
         WHERE code = ANY($2)
-        ON CONFLICT DO NOTHING
+        ON CONFLICT ("user", language) DO NOTHING
         "#,
         user,
-        &new_langs
+        new_langs
     )
-    .execute(&db.0)
-    .await
-    .unwrap();
+    .execute(&mut **tx)
+    .await?;
+
+    Ok(())
 }

@@ -43,7 +43,7 @@ async fn get_users(pagination: Query<Pagination>, db: Database) -> impl IntoResp
                     languages.id,
                     languages.label,
                     languages.code
-                )::user_language_type),
+                )::user_language_type) FILTER (WHERE languages.id IS NOT NULL),
                 ARRAY[]::user_language_type[]
             ) AS "allowed_langs!: Vec<UserLanguage>"
         FROM user_settings
@@ -112,6 +112,8 @@ async fn create_or_update_user(
         .file_name_lang
         .unwrap_or_else(|| "normalized".to_string());
 
+    let mut tx = db.0.begin().await.unwrap();
+
     let user = sqlx::query_as!(
         SimpleUser,
         r#"
@@ -129,11 +131,13 @@ async fn create_or_update_user(
         data.default_search,
         file_name_lang,
     )
-    .fetch_one(&db.0)
+    .fetch_one(&mut *tx)
     .await
     .unwrap();
 
-    update_languages(user.id, data.allowed_langs, db.clone()).await;
+    update_languages(&mut tx, user.id, &data.allowed_langs)
+        .await
+        .unwrap();
 
     let user = sqlx::query_as!(
         UserDetail,
@@ -152,7 +156,7 @@ async fn create_or_update_user(
                     languages.id,
                     languages.label,
                     languages.code
-                )::user_language_type),
+                )::user_language_type) FILTER (WHERE languages.id IS NOT NULL),
                 ARRAY[]::user_language_type[]
             ) AS "allowed_langs!: Vec<UserLanguage>"
         FROM user_settings
@@ -163,9 +167,11 @@ async fn create_or_update_user(
         "#,
         user.id,
     )
-    .fetch_one(&db.0)
+    .fetch_one(&mut *tx)
     .await
     .unwrap();
+
+    tx.commit().await.unwrap();
 
     Json::<UserDetail>(user).into_response()
 }

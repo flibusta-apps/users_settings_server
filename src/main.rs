@@ -1,11 +1,8 @@
-pub mod config;
-pub mod db;
-pub mod views;
-
 use sentry::{integrations::debug_images::DebugImagesIntegration, types::Dsn, ClientOptions};
 use sentry_tracing::EventFilter;
 use tracing::info;
 use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
+use users_settings_server::{config, views};
 
 use std::{net::SocketAddr, str::FromStr};
 

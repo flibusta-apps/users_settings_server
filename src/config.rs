@@ -45,7 +45,7 @@ impl Config {
             postgres_pool_acquire_timeout_sec: std::env::var("POSTGRES_POOL_ACQUIRE_TIMEOUT_SEC")
                 .ok()
                 .and_then(|s| s.parse().ok())
-                .unwrap_or(10),
+                .unwrap_or(5),
             application_name: get_env_or("APPLICATION_NAME", "users_settings_server"),
 
             sentry_dsn: std::env::var("SENTRY_DSN").ok().filter(|s| !s.is_empty()),

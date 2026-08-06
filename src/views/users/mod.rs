@@ -14,6 +14,7 @@ use axum::{
 };
 
 use super::{
+    languages,
     pagination::{Page, Pagination},
     Database,
 };
@@ -118,10 +119,9 @@ async fn create_or_update_user(
         return Err(AppError::Validation(msg));
     }
 
-    let file_name_lang = data
-        .file_name_lang
-        .clone()
-        .unwrap_or_else(|| "normalized".to_string());
+    let file_name_lang: &str = data.file_name_lang.as_deref().unwrap_or("normalized");
+
+    let languages_cache = languages::get_cached_languages(&db.0).await?;
 
     let mut tx = db.0.begin().await?;
 
@@ -147,40 +147,37 @@ async fn create_or_update_user(
 
     update_languages(&mut tx, user.id, &data.allowed_langs).await?;
 
-    let user = sqlx::query_as!(
-        UserDetail,
-        r#"
-        SELECT
-            user_settings.id,
-            user_settings.user_id,
-            user_settings.last_name,
-            user_settings.first_name,
-            user_settings.username,
-            user_settings.source,
-            user_settings.default_search,
-            user_settings.file_name_lang,
-            COALESCE(
-                ARRAY_AGG(ROW(
-                    languages.id,
-                    languages.label,
-                    languages.code
-                )::user_language_type) FILTER (WHERE languages.id IS NOT NULL),
-                ARRAY[]::user_language_type[]
-            ) AS "allowed_langs!: Vec<UserLanguage>"
-        FROM user_settings
-        LEFT JOIN users_languages ON user_settings.id = users_languages.user
-        LEFT JOIN languages ON users_languages.language = languages.id
-        WHERE user_settings.id = $1
-        GROUP BY user_settings.id
-        "#,
-        user.id,
-    )
-    .fetch_one(&mut *tx)
-    .await?;
-
     tx.commit().await?;
 
-    Ok(Json::<UserDetail>(user).into_response())
+    let mut seen = std::collections::HashSet::new();
+    let allowed_langs: Vec<UserLanguage> = data
+        .allowed_langs
+        .iter()
+        .filter(|code| seen.insert(code.as_str()))
+        .filter_map(|code| {
+            languages_cache
+                .iter()
+                .find(|l| &l.code == code)
+                .map(|l| UserLanguage {
+                    id: l.id,
+                    label: l.label.clone(),
+                    code: l.code.clone(),
+                })
+        })
+        .collect();
+
+    Ok(Json(UserDetail {
+        id: user.id,
+        user_id: user.user_id,
+        last_name: user.last_name,
+        first_name: user.first_name,
+        username: user.username,
+        source: user.source,
+        default_search: user.default_search,
+        file_name_lang: user.file_name_lang,
+        allowed_langs,
+    })
+    .into_response())
 }
 
 async fn update_activity(

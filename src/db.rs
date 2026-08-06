@@ -23,6 +23,7 @@ pub async fn get_postgres_pool() -> PgPool {
 
     let pool = PgPoolOptions::new()
         .max_connections(CONFIG.postgres_pool_max_connections)
+        .min_connections(2)
         .acquire_timeout(std::time::Duration::from_secs(
             CONFIG.postgres_pool_acquire_timeout_sec,
         ))

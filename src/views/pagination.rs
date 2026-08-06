@@ -64,12 +64,16 @@ where
     T: Serialize,
 {
     pub fn create(items: Vec<T>, items_count: i64, pagination: Pagination) -> Self {
+        let total: usize = items_count.try_into().unwrap_or(0);
+        let size = pagination.size.max(1);
+        let pages = total.div_ceil(size);
+
         Self {
             items,
-            total: items_count.try_into().unwrap_or(0),
+            total,
             page: pagination.page,
             size: pagination.size,
-            pages: (items_count as f64 / pagination.size as f64).ceil() as usize,
+            pages,
         }
     }
 }

@@ -13,7 +13,7 @@ use crate::error::AppError;
 
 #[derive(sqlx::FromRow)]
 struct ChatDonateNotification {
-    pub sended: chrono::NaiveDateTime,
+    pub sended: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(Deserialize)]
@@ -45,8 +45,7 @@ async fn is_need_send(
 
     Ok(match notification {
         Some(notification) => {
-            let result = notification.sended + Duration::days(delta_days)
-                <= chrono::offset::Local::now().naive_local();
+            let result = notification.sended + Duration::days(delta_days) <= chrono::Utc::now();
             Json(result).into_response()
         }
         None => Json(true).into_response(),
@@ -60,7 +59,7 @@ async fn mark_sent(Path(chat_id): Path<i64>, db: Database) -> Result<impl IntoRe
         ON CONFLICT (chat_id) DO UPDATE SET sended = EXCLUDED.sended
         RETURNING sended"#,
         chat_id,
-        chrono::offset::Local::now().naive_local()
+        chrono::Utc::now()
     )
     .fetch_one(&db.0)
     .await?;

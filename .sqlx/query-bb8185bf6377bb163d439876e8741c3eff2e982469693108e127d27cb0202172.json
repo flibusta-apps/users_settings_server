@@ -6,13 +6,13 @@
       {
         "ordinal": 0,
         "name": "sended",
-        "type_info": "Timestamp"
+        "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
         "Int8",
-        "Timestamp"
+        "Timestamptz"
       ]
     },
     "nullable": [

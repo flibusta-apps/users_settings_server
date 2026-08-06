@@ -17,14 +17,21 @@ use super::{
     pagination::{Page, Pagination},
     Database,
 };
+use crate::error::AppError;
 
-async fn get_users(pagination: Query<Pagination>, db: Database) -> impl IntoResponse {
+async fn get_users(
+    pagination: Query<Pagination>,
+    db: Database,
+) -> Result<impl IntoResponse, AppError> {
     let pagination: Pagination = pagination.0;
+
+    if let Err(msg) = pagination.validate() {
+        return Err(AppError::Validation(msg));
+    }
 
     let users_count = sqlx::query_scalar(r#"SELECT COUNT(*) FROM user_settings"#)
         .fetch_one(&db.0)
-        .await
-        .unwrap();
+        .await?;
 
     let users = sqlx::query_as!(
         UserDetail,
@@ -58,13 +65,12 @@ async fn get_users(pagination: Query<Pagination>, db: Database) -> impl IntoResp
         pagination.take(),
     )
     .fetch_all(&db.0)
-    .await
-    .unwrap();
+    .await?;
 
-    Json(Page::create(users, users_count, pagination)).into_response()
+    Ok(Json(Page::create(users, users_count, pagination)).into_response())
 }
 
-async fn get_user(Path(user_id): Path<i64>, db: Database) -> impl IntoResponse {
+async fn get_user(Path(user_id): Path<i64>, db: Database) -> Result<impl IntoResponse, AppError> {
     let user = sqlx::query_as!(
         UserDetail,
         r#"
@@ -94,25 +100,30 @@ async fn get_user(Path(user_id): Path<i64>, db: Database) -> impl IntoResponse {
         user_id,
     )
     .fetch_optional(&db.0)
-    .await
-    .unwrap();
+    .await?;
 
-    if user.is_none() {
-        return StatusCode::NO_CONTENT.into_response();
-    }
+    let user = match user {
+        Some(v) => v,
+        None => return Ok(StatusCode::NO_CONTENT.into_response()),
+    };
 
-    Json::<UserDetail>(user.unwrap()).into_response()
+    Ok(Json::<UserDetail>(user).into_response())
 }
 
 async fn create_or_update_user(
     db: Database,
     Json(data): Json<CreateOrUpdateUserData>,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
+    if let Err(msg) = data.validate() {
+        return Err(AppError::Validation(msg));
+    }
+
     let file_name_lang = data
         .file_name_lang
+        .clone()
         .unwrap_or_else(|| "normalized".to_string());
 
-    let mut tx = db.0.begin().await.unwrap();
+    let mut tx = db.0.begin().await?;
 
     let user = sqlx::query_as!(
         SimpleUser,
@@ -132,12 +143,9 @@ async fn create_or_update_user(
         file_name_lang,
     )
     .fetch_one(&mut *tx)
-    .await
-    .unwrap();
+    .await?;
 
-    update_languages(&mut tx, user.id, &data.allowed_langs)
-        .await
-        .unwrap();
+    update_languages(&mut tx, user.id, &data.allowed_langs).await?;
 
     let user = sqlx::query_as!(
         UserDetail,
@@ -168,15 +176,17 @@ async fn create_or_update_user(
         user.id,
     )
     .fetch_one(&mut *tx)
-    .await
-    .unwrap();
+    .await?;
 
-    tx.commit().await.unwrap();
+    tx.commit().await?;
 
-    Json::<UserDetail>(user).into_response()
+    Ok(Json::<UserDetail>(user).into_response())
 }
 
-async fn update_activity(Path(user_id): Path<i64>, db: Database) -> impl IntoResponse {
+async fn update_activity(
+    Path(user_id): Path<i64>,
+    db: Database,
+) -> Result<impl IntoResponse, AppError> {
     let user = sqlx::query_as!(
         SimpleUser,
         r#"
@@ -187,12 +197,11 @@ async fn update_activity(Path(user_id): Path<i64>, db: Database) -> impl IntoRes
         user_id,
     )
     .fetch_optional(&db.0)
-    .await
-    .unwrap();
+    .await?;
 
     let user = match user {
         Some(v) => v,
-        None => return StatusCode::NOT_FOUND.into_response(),
+        None => return Ok(StatusCode::NOT_FOUND.into_response()),
     };
 
     sqlx::query!(
@@ -205,10 +214,9 @@ async fn update_activity(Path(user_id): Path<i64>, db: Database) -> impl IntoRes
         user.id,
     )
     .execute(&db.0)
-    .await
-    .unwrap();
+    .await?;
 
-    StatusCode::OK.into_response()
+    Ok(StatusCode::OK.into_response())
 }
 
 pub fn get_router() -> Router {

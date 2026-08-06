@@ -9,6 +9,7 @@ use chrono::Duration;
 use serde::Deserialize;
 
 use super::Database;
+use crate::error::AppError;
 
 #[derive(sqlx::FromRow)]
 struct ChatDonateNotification {
@@ -24,7 +25,7 @@ async fn is_need_send(
     Path(chat_id): Path<i64>,
     query: Query<IsNeedSendQuery>,
     db: Database,
-) -> impl IntoResponse {
+) -> Result<impl IntoResponse, AppError> {
     const NOTIFICATION_DELTA_DAYS_PRIVATE: i64 = 60;
     const NOTIFICATION_DELTA_DAYS: i64 = 7;
 
@@ -34,8 +35,7 @@ async fn is_need_send(
         chat_id
     )
     .fetch_optional(&db.0)
-    .await
-    .unwrap();
+    .await?;
 
     let delta_days = if query.is_private {
         NOTIFICATION_DELTA_DAYS_PRIVATE
@@ -43,17 +43,17 @@ async fn is_need_send(
         NOTIFICATION_DELTA_DAYS
     };
 
-    match notification {
+    Ok(match notification {
         Some(notification) => {
             let result = notification.sended + Duration::days(delta_days)
                 <= chrono::offset::Local::now().naive_local();
             Json(result).into_response()
         }
         None => Json(true).into_response(),
-    }
+    })
 }
 
-async fn mark_sent(Path(chat_id): Path<i64>, db: Database) -> impl IntoResponse {
+async fn mark_sent(Path(chat_id): Path<i64>, db: Database) -> Result<impl IntoResponse, AppError> {
     sqlx::query_as!(
         ChatDonateNotification,
         r#"INSERT INTO chat_donate_notifications (chat_id, sended) VALUES ($1, $2)
@@ -63,10 +63,9 @@ async fn mark_sent(Path(chat_id): Path<i64>, db: Database) -> impl IntoResponse 
         chrono::offset::Local::now().naive_local()
     )
     .fetch_one(&db.0)
-    .await
-    .unwrap();
+    .await?;
 
-    StatusCode::OK
+    Ok(StatusCode::OK)
 }
 
 pub fn get_router() -> Router {

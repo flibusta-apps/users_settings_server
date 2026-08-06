@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+pub const MAX_PAGE_SIZE: usize = 500;
+
 #[derive(Deserialize)]
 pub struct Pagination {
     #[serde(default = "default_page")]
@@ -16,12 +18,32 @@ fn default_size() -> usize {
 }
 
 impl Pagination {
+    pub fn validate(&self) -> Result<(), String> {
+        if self.page < 1 {
+            return Err("page must be greater than or equal to 1".to_string());
+        }
+        if self.size < 1 {
+            return Err("size must be greater than or equal to 1".to_string());
+        }
+        if self.size > MAX_PAGE_SIZE {
+            return Err(format!(
+                "size must be less than or equal to {}",
+                MAX_PAGE_SIZE
+            ));
+        }
+        Ok(())
+    }
+
     pub fn skip(&self) -> i64 {
-        ((self.page - 1) * self.size).try_into().unwrap()
+        self.page
+            .saturating_sub(1)
+            .saturating_mul(self.size)
+            .try_into()
+            .unwrap_or(i64::MAX)
     }
 
     pub fn take(&self) -> i64 {
-        self.size.try_into().unwrap()
+        self.size.try_into().unwrap_or(i64::MAX)
     }
 }
 
@@ -44,7 +66,7 @@ where
     pub fn create(items: Vec<T>, items_count: i64, pagination: Pagination) -> Self {
         Self {
             items,
-            total: items_count.try_into().unwrap(),
+            total: items_count.try_into().unwrap_or(0),
             page: pagination.page,
             size: pagination.size,
             pages: (items_count as f64 / pagination.size as f64).ceil() as usize,

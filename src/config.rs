@@ -33,7 +33,9 @@ impl Config {
             postgres_user: get_env("POSTGRES_USER"),
             postgres_password: get_env("POSTGRES_PASSWORD"),
             postgres_host: get_env("POSTGRES_HOST"),
-            postgres_port: get_env("POSTGRES_PORT").parse().unwrap(),
+            postgres_port: get_env("POSTGRES_PORT")
+                .parse()
+                .unwrap_or_else(|_| panic!("Invalid POSTGRES_PORT")),
             postgres_db: get_env("POSTGRES_DB"),
 
             postgres_pool_max_connections: std::env::var("POSTGRES_POOL_MAX_CONNECTIONS")

@@ -9,6 +9,7 @@ use axum_prometheus::PrometheusMetricLayer;
 use sqlx::PgPool;
 use subtle::ConstantTimeEq;
 
+use tower_http::catch_panic::CatchPanicLayer;
 use tower_http::trace::{self, TraceLayer};
 use tracing::Level;
 
@@ -79,4 +80,5 @@ pub async fn get_router() -> Router {
                 .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
                 .on_response(trace::DefaultOnResponse::new().level(Level::INFO)),
         )
+        .layer(CatchPanicLayer::new())
 }

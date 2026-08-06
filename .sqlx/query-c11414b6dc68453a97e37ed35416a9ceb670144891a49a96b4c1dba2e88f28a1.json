@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO chat_donate_notifications (chat_id, sended)\n        VALUES ($1, $2)\n        ON CONFLICT (chat_id) DO UPDATE\n        SET sended = $2\n        WHERE chat_donate_notifications.sended <= $3\n        RETURNING chat_id\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "chat_id",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "c11414b6dc68453a97e37ed35416a9ceb670144891a49a96b4c1dba2e88f28a1"
+}

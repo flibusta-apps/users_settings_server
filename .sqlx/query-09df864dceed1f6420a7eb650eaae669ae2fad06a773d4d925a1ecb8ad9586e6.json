@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO chat_donate_notifications (chat_id, sended) VALUES ($1, $2)\n        ON CONFLICT (chat_id) DO UPDATE SET sended = EXCLUDED.sended",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "09df864dceed1f6420a7eb650eaae669ae2fad06a773d4d925a1ecb8ad9586e6"
+}

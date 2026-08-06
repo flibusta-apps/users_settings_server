@@ -52,8 +52,16 @@ async fn health_check() -> StatusCode {
     StatusCode::OK
 }
 
+async fn ready_check(db: Database) -> StatusCode {
+    match sqlx::query("SELECT 1").execute(&db.0).await {
+        Ok(_) => StatusCode::OK,
+        Err(_) => StatusCode::SERVICE_UNAVAILABLE,
+    }
+}
+
 pub async fn get_router() -> Router {
     let client = get_postgres_pool().await;
+    let ready_client = client.clone();
 
     let (prometheus_layer, metric_handle) = PrometheusMetricLayer::pair();
 
@@ -69,7 +77,10 @@ pub async fn get_router() -> Router {
         .route("/metrics", get(|| async move { metric_handle.render() }))
         .layer(middleware::from_fn(auth));
 
-    let health_router = Router::new().route("/health", get(health_check));
+    let health_router = Router::new()
+        .route("/health", get(health_check))
+        .route("/ready", get(ready_check))
+        .layer(Extension(ready_client));
 
     Router::new()
         .merge(app_router)

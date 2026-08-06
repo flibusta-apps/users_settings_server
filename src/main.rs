@@ -51,14 +51,16 @@ async fn shutdown_signal() {
 
 #[tokio::main]
 async fn main() {
-    let options = ClientOptions {
-        dsn: Some(Dsn::from_str(&config::CONFIG.sentry_dsn).unwrap()),
-        default_integrations: false,
-        ..Default::default()
-    }
-    .add_integration(DebugImagesIntegration::new());
+    let _guard = config::CONFIG.sentry_dsn.as_ref().map(|dsn| {
+        let options = ClientOptions {
+            dsn: Some(Dsn::from_str(dsn).unwrap()),
+            default_integrations: false,
+            ..Default::default()
+        }
+        .add_integration(DebugImagesIntegration::new());
 
-    let _guard = sentry::init(options);
+        sentry::init(options)
+    });
 
     let sentry_layer = sentry_tracing::layer().event_filter(|md| match md.level() {
         &tracing::Level::ERROR => EventFilter::Event,

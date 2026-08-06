@@ -14,7 +14,7 @@ pub struct Config {
 
     pub application_name: String,
 
-    pub sentry_dsn: String,
+    pub sentry_dsn: Option<String>,
 }
 
 fn get_env(env: &'static str) -> String {
@@ -45,10 +45,10 @@ impl Config {
             postgres_pool_acquire_timeout_sec: std::env::var("POSTGRES_POOL_ACQUIRE_TIMEOUT_SEC")
                 .ok()
                 .and_then(|s| s.parse().ok())
-                .unwrap_or(300),
+                .unwrap_or(10),
             application_name: get_env_or("APPLICATION_NAME", "users_settings_server"),
 
-            sentry_dsn: get_env("SENTRY_DSN"),
+            sentry_dsn: std::env::var("SENTRY_DSN").ok().filter(|s| !s.is_empty()),
         }
     }
 }

@@ -1,5 +1,7 @@
 FROM rust:bookworm AS builder
 
+ENV SQLX_OFFLINE=true
+
 WORKDIR /app
 
 COPY . .
@@ -15,8 +17,8 @@ RUN apt-get update \
 
 RUN update-ca-certificates
 
-COPY ./scripts/*.sh /
-RUN chmod +x /*.sh
+COPY ./scripts/start.sh /
+RUN chmod +x /start.sh
 
 WORKDIR /app
 

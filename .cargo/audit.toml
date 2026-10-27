@@ -1,0 +1,4 @@
+[advisories]
+# rsa is pulled in only via sqlx-mysql in Cargo.lock (sqlx-macros-core); the MySQL
+# driver is not compiled into this binary (postgres only). No fixed rsa release exists.
+ignore = ["RUSTSEC-2023-0071"]

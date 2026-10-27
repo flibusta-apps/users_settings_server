@@ -1,7 +1,7 @@
-use sentry::{integrations::debug_images::DebugImagesIntegration, types::Dsn, ClientOptions};
+use sentry::{types::Dsn, ClientOptions};
 use sentry_tracing::EventFilter;
 use tracing::info;
-use tracing_subscriber::{filter, layer::SubscriberExt, util::SubscriberInitExt};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use users_settings_server::{config, views};
 
 use std::{net::SocketAddr, str::FromStr};
@@ -54,10 +54,8 @@ async fn main() {
     let _guard = config::CONFIG.sentry_dsn.as_ref().map(|dsn| {
         let options = ClientOptions {
             dsn: Some(Dsn::from_str(dsn).unwrap()),
-            default_integrations: false,
             ..Default::default()
-        }
-        .add_integration(DebugImagesIntegration::new());
+        };
 
         sentry::init(options)
     });
@@ -69,7 +67,7 @@ async fn main() {
 
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer().with_target(false))
-        .with(filter::LevelFilter::INFO)
+        .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")))
         .with(sentry_layer)
         .init();
 

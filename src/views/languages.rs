@@ -1,4 +1,4 @@
-use axum::{extract::Path, http::StatusCode, response::IntoResponse, routing::get, Json, Router};
+use axum::{http::StatusCode, response::IntoResponse, routing::get, Json, Router};
 use once_cell::sync::Lazy;
 use serde::Serialize;
 use std::sync::Arc;
@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 
 use super::Database;
-use crate::error::AppError;
+use crate::error::{ApiPath, AppError};
 
 #[derive(sqlx::FromRow, Serialize, Clone)]
 pub struct LanguageDetail {
@@ -59,19 +59,14 @@ async fn get_languages(db: Database) -> Result<impl IntoResponse, AppError> {
 }
 
 async fn get_language_by_code(
-    Path(code): Path<String>,
+    ApiPath(code): ApiPath<String>,
     db: Database,
 ) -> Result<impl IntoResponse, AppError> {
-    let language = sqlx::query_as!(
-        LanguageDetail,
-        r#"SELECT id, label, code FROM languages WHERE code = $1"#,
-        code
-    )
-    .fetch_optional(&db.0)
-    .await?;
+    let languages = get_cached_languages(&db.0).await?;
+    let language = languages.iter().find(|l| l.code == code);
 
     Ok(match language {
-        Some(v) => Json(v).into_response(),
+        Some(v) => Json(v.clone()).into_response(),
         None => StatusCode::NOT_FOUND.into_response(),
     })
 }

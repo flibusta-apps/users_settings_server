@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM users_languages WHERE \"user\" = $1 AND language <> ALL($2)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "72566eb9757b4273a60f2d0082cd5b4b660c3e653c3c4b0fc6631a6e1240b907"
+}

@@ -165,15 +165,15 @@ async fn update_activity(
     ApiPath(user_id): ApiPath<i64>,
     db: Database,
 ) -> Result<impl IntoResponse, AppError> {
-    let result = sqlx::query(
+    let result = sqlx::query!(
         r#"
         INSERT INTO user_activity ("user", updated)
         SELECT id, NOW() FROM user_settings WHERE user_id = $1
         ON CONFLICT ("user") DO UPDATE
         SET updated = NOW()
         "#,
+        user_id,
     )
-    .bind(user_id)
     .execute(&db.0)
     .await?;
 

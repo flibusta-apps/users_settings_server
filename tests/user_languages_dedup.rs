@@ -4,7 +4,7 @@ use users_settings_server::views::users::utils::update_languages;
 #[sqlx::test(migrations = "./migrations")]
 async fn test_repeated_update_with_duplicates_does_not_duplicate_rows(pool: PgPool) {
     // Seed languages.
-    sqlx::query(
+    sqlx::query!(
         r#"INSERT INTO languages (label, code) VALUES ('Ukrainian', 'uk'), ('Belarusian', 'be'), ('Russian', 'ru') ON CONFLICT (code) DO NOTHING"#
     )
     .execute(&pool)
@@ -12,14 +12,14 @@ async fn test_repeated_update_with_duplicates_does_not_duplicate_rows(pool: PgPo
     .unwrap();
 
     // Seed a user_settings row.
-    let user_id: i32 = sqlx::query_scalar(
+    let user = sqlx::query!(
         r#"
         INSERT INTO user_settings (user_id, last_name, first_name, username, source)
         VALUES ($1, 'last', 'first', 'username', 'source')
         RETURNING id
         "#,
+        1i64,
     )
-    .bind(1i64)
     .fetch_one(&pool)
     .await
     .unwrap();
@@ -28,36 +28,37 @@ async fn test_repeated_update_with_duplicates_does_not_duplicate_rows(pool: PgPo
 
     // First "POST".
     let mut tx = pool.begin().await.unwrap();
-    update_languages(&mut tx, user_id, &new_langs)
+    update_languages(&mut tx, user.id, &new_langs)
         .await
         .unwrap();
     tx.commit().await.unwrap();
 
     // Second "POST" with the same duplicate-containing list.
     let mut tx = pool.begin().await.unwrap();
-    update_languages(&mut tx, user_id, &new_langs)
+    update_languages(&mut tx, user.id, &new_langs)
         .await
         .unwrap();
     tx.commit().await.unwrap();
 
-    let count =
-        sqlx::query_scalar::<_, i64>(r#"SELECT COUNT(*) FROM users_languages WHERE "user" = $1"#)
-            .bind(user_id)
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+    let count = sqlx::query_scalar!(
+        r#"SELECT COUNT(*) AS "count!" FROM users_languages WHERE "user" = $1"#,
+        user.id,
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
 
     assert_eq!(count, 2, "expected exactly 2 rows (no duplicates)");
 
-    let mut codes = sqlx::query_scalar::<_, String>(
+    let mut codes = sqlx::query_scalar!(
         r#"
         SELECT languages.code
         FROM users_languages
         JOIN languages ON users_languages.language = languages.id
         WHERE users_languages."user" = $1
         "#,
+        user.id,
     )
-    .bind(user_id)
     .fetch_all(&pool)
     .await
     .unwrap();
@@ -68,19 +69,19 @@ async fn test_repeated_update_with_duplicates_does_not_duplicate_rows(pool: PgPo
 
 #[sqlx::test(migrations = "./migrations")]
 async fn test_empty_allowed_langs_results_in_no_rows(pool: PgPool) {
-    sqlx::query(r#"INSERT INTO languages (label, code) VALUES ('Ukrainian', 'uk') ON CONFLICT (code) DO NOTHING"#)
+    sqlx::query!(r#"INSERT INTO languages (label, code) VALUES ('Ukrainian', 'uk') ON CONFLICT (code) DO NOTHING"#)
         .execute(&pool)
         .await
         .unwrap();
 
-    let user_id: i32 = sqlx::query_scalar(
+    let user = sqlx::query!(
         r#"
         INSERT INTO user_settings (user_id, last_name, first_name, username, source)
         VALUES ($1, 'last', 'first', 'username', 'source')
         RETURNING id
         "#,
+        2i64,
     )
-    .bind(2i64)
     .fetch_one(&pool)
     .await
     .unwrap();
@@ -88,17 +89,18 @@ async fn test_empty_allowed_langs_results_in_no_rows(pool: PgPool) {
     let empty_langs: Vec<String> = vec![];
 
     let mut tx = pool.begin().await.unwrap();
-    update_languages(&mut tx, user_id, &empty_langs)
+    update_languages(&mut tx, user.id, &empty_langs)
         .await
         .unwrap();
     tx.commit().await.unwrap();
 
-    let count =
-        sqlx::query_scalar::<_, i64>(r#"SELECT COUNT(*) FROM users_languages WHERE "user" = $1"#)
-            .bind(user_id)
-            .fetch_one(&pool)
-            .await
-            .unwrap();
+    let count = sqlx::query_scalar!(
+        r#"SELECT COUNT(*) AS "count!" FROM users_languages WHERE "user" = $1"#,
+        user.id,
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
 
     assert_eq!(count, 0);
 }

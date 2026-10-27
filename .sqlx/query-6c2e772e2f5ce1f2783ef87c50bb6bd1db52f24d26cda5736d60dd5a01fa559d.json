@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO users_languages (\"user\", language)\n        SELECT $1, UNNEST($2::int4[])\n        ON CONFLICT (\"user\", language) DO NOTHING\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4Array"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "6c2e772e2f5ce1f2783ef87c50bb6bd1db52f24d26cda5736d60dd5a01fa559d"
+}

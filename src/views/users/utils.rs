@@ -21,11 +21,13 @@ pub async fn update_languages(
         .cloned()
         .collect();
 
-    let found: Vec<UserLanguage> =
-        sqlx::query_as("SELECT id, label, code FROM languages WHERE code = ANY($1)")
-            .bind(&requested)
-            .fetch_all(&mut **tx)
-            .await?;
+    let found = sqlx::query_as!(
+        UserLanguage,
+        "SELECT id, label, code FROM languages WHERE code = ANY($1)",
+        &requested
+    )
+    .fetch_all(&mut **tx)
+    .await?;
 
     let unknown: Vec<&str> = requested
         .iter()
@@ -41,21 +43,23 @@ pub async fn update_languages(
 
     let ids: Vec<i32> = found.iter().map(|l| l.id).collect();
 
-    sqlx::query(r#"DELETE FROM users_languages WHERE "user" = $1 AND language <> ALL($2)"#)
-        .bind(user)
-        .bind(&ids)
-        .execute(&mut **tx)
-        .await?;
+    sqlx::query!(
+        r#"DELETE FROM users_languages WHERE "user" = $1 AND language <> ALL($2)"#,
+        user,
+        &ids
+    )
+    .execute(&mut **tx)
+    .await?;
 
-    sqlx::query(
+    sqlx::query!(
         r#"
         INSERT INTO users_languages ("user", language)
         SELECT $1, UNNEST($2::int4[])
         ON CONFLICT ("user", language) DO NOTHING
         "#,
+        user,
+        &ids
     )
-    .bind(user)
-    .bind(&ids)
     .execute(&mut **tx)
     .await?;
 

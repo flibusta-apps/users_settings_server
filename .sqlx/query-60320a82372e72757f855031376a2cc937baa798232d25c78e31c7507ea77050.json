@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO user_activity (\"user\", updated)\n        SELECT id, NOW() FROM user_settings WHERE user_id = $1\n        ON CONFLICT (\"user\") DO UPDATE\n        SET updated = NOW()\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "60320a82372e72757f855031376a2cc937baa798232d25c78e31c7507ea77050"
+}

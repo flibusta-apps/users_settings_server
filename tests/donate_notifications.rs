@@ -17,12 +17,14 @@ async fn test_is_need_send_check_unknown_chat_returns_true(pool: PgPool) {
 #[sqlx::test(migrations = "./migrations")]
 async fn test_is_need_send_check_group_within_window_returns_false(pool: PgPool) {
     let chat_id = -900_000_002i64;
-    sqlx::query(r#"INSERT INTO chat_donate_notifications (chat_id, sended) VALUES ($1, $2)"#)
-        .bind(chat_id)
-        .bind(Utc::now())
-        .execute(&pool)
-        .await
-        .unwrap();
+    sqlx::query!(
+        r#"INSERT INTO chat_donate_notifications (chat_id, sended) VALUES ($1, $2)"#,
+        chat_id,
+        Utc::now(),
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
 
     let result = is_need_send_check(&pool, chat_id, false).await.unwrap();
     assert!(!result);
@@ -31,12 +33,14 @@ async fn test_is_need_send_check_group_within_window_returns_false(pool: PgPool)
 #[sqlx::test(migrations = "./migrations")]
 async fn test_is_need_send_check_group_outside_window_returns_true(pool: PgPool) {
     let chat_id = -900_000_003i64;
-    sqlx::query(r#"INSERT INTO chat_donate_notifications (chat_id, sended) VALUES ($1, $2)"#)
-        .bind(chat_id)
-        .bind(Utc::now() - Duration::days(8))
-        .execute(&pool)
-        .await
-        .unwrap();
+    sqlx::query!(
+        r#"INSERT INTO chat_donate_notifications (chat_id, sended) VALUES ($1, $2)"#,
+        chat_id,
+        Utc::now() - Duration::days(8),
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
 
     let result = is_need_send_check(&pool, chat_id, false).await.unwrap();
     assert!(result);
@@ -45,12 +49,14 @@ async fn test_is_need_send_check_group_outside_window_returns_true(pool: PgPool)
 #[sqlx::test(migrations = "./migrations")]
 async fn test_is_need_send_check_private_within_window_returns_false(pool: PgPool) {
     let chat_id = -900_000_004i64;
-    sqlx::query(r#"INSERT INTO chat_donate_notifications (chat_id, sended) VALUES ($1, $2)"#)
-        .bind(chat_id)
-        .bind(Utc::now() - Duration::days(30))
-        .execute(&pool)
-        .await
-        .unwrap();
+    sqlx::query!(
+        r#"INSERT INTO chat_donate_notifications (chat_id, sended) VALUES ($1, $2)"#,
+        chat_id,
+        Utc::now() - Duration::days(30),
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
 
     let result = is_need_send_check(&pool, chat_id, true).await.unwrap();
     assert!(!result);
@@ -59,12 +65,14 @@ async fn test_is_need_send_check_private_within_window_returns_false(pool: PgPoo
 #[sqlx::test(migrations = "./migrations")]
 async fn test_is_need_send_check_private_outside_window_returns_true(pool: PgPool) {
     let chat_id = -900_000_005i64;
-    sqlx::query(r#"INSERT INTO chat_donate_notifications (chat_id, sended) VALUES ($1, $2)"#)
-        .bind(chat_id)
-        .bind(Utc::now() - Duration::days(61))
-        .execute(&pool)
-        .await
-        .unwrap();
+    sqlx::query!(
+        r#"INSERT INTO chat_donate_notifications (chat_id, sended) VALUES ($1, $2)"#,
+        chat_id,
+        Utc::now() - Duration::days(61),
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
 
     let result = is_need_send_check(&pool, chat_id, true).await.unwrap();
     assert!(result);

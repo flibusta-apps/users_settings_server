@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "INSERT INTO languages (label, code) VALUES ('Ukrainian', 'uk'), ('Belarusian', 'be'), ('Russian', 'ru') ON CONFLICT (code) DO NOTHING",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "7867afd39443390af4b361a59f3403eb388707822b1e18487b7493407fae505e"
+}

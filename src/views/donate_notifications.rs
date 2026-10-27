@@ -1,5 +1,4 @@
 use axum::{
-    extract::{Path, Query},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
@@ -9,7 +8,7 @@ use chrono::Duration;
 use serde::Deserialize;
 
 use super::Database;
-use crate::error::AppError;
+use crate::error::{ApiPath, ApiQuery, AppError};
 
 const NOTIFICATION_DELTA_DAYS_PRIVATE: i64 = 60;
 const NOTIFICATION_DELTA_DAYS: i64 = 7;
@@ -79,8 +78,8 @@ pub async fn try_claim(
 }
 
 async fn is_need_send(
-    Path(chat_id): Path<i64>,
-    query: Query<IsNeedSendQuery>,
+    ApiPath(chat_id): ApiPath<i64>,
+    ApiQuery(query): ApiQuery<IsNeedSendQuery>,
     db: Database,
 ) -> Result<impl IntoResponse, AppError> {
     let result = is_need_send_check(&db.0, chat_id, query.is_private).await?;
@@ -89,8 +88,8 @@ async fn is_need_send(
 }
 
 async fn try_claim_handler(
-    Path(chat_id): Path<i64>,
-    query: Query<IsNeedSendQuery>,
+    ApiPath(chat_id): ApiPath<i64>,
+    ApiQuery(query): ApiQuery<IsNeedSendQuery>,
     db: Database,
 ) -> Result<impl IntoResponse, AppError> {
     let result = try_claim(&db.0, chat_id, query.is_private).await?;
@@ -98,7 +97,10 @@ async fn try_claim_handler(
     Ok(Json(result).into_response())
 }
 
-async fn mark_sent(Path(chat_id): Path<i64>, db: Database) -> Result<impl IntoResponse, AppError> {
+async fn mark_sent(
+    ApiPath(chat_id): ApiPath<i64>,
+    db: Database,
+) -> Result<impl IntoResponse, AppError> {
     sqlx::query!(
         r#"INSERT INTO chat_donate_notifications (chat_id, sended) VALUES ($1, $2)
         ON CONFLICT (chat_id) DO UPDATE SET sended = EXCLUDED.sended"#,

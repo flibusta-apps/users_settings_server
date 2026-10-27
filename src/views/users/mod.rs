@@ -6,7 +6,6 @@ use self::{
     utils::update_languages,
 };
 use axum::{
-    extract::{Path, Query},
     http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
@@ -14,18 +13,15 @@ use axum::{
 };
 
 use super::{
-    languages,
     pagination::{Page, Pagination},
     Database,
 };
-use crate::error::AppError;
+use crate::error::{ApiJson, ApiPath, ApiQuery, AppError};
 
 async fn get_users(
-    pagination: Query<Pagination>,
+    ApiQuery(pagination): ApiQuery<Pagination>,
     db: Database,
 ) -> Result<impl IntoResponse, AppError> {
-    let pagination: Pagination = pagination.0;
-
     if let Err(msg) = pagination.validate() {
         return Err(AppError::Validation(msg));
     }
@@ -71,7 +67,10 @@ async fn get_users(
     Ok(Json(Page::create(users, users_count, pagination)).into_response())
 }
 
-async fn get_user(Path(user_id): Path<i64>, db: Database) -> Result<impl IntoResponse, AppError> {
+async fn get_user(
+    ApiPath(user_id): ApiPath<i64>,
+    db: Database,
+) -> Result<impl IntoResponse, AppError> {
     let user = sqlx::query_as!(
         UserDetail,
         r#"
@@ -113,15 +112,13 @@ async fn get_user(Path(user_id): Path<i64>, db: Database) -> Result<impl IntoRes
 
 async fn create_or_update_user(
     db: Database,
-    Json(data): Json<CreateOrUpdateUserData>,
+    ApiJson(data): ApiJson<CreateOrUpdateUserData>,
 ) -> Result<impl IntoResponse, AppError> {
     if let Err(msg) = data.validate() {
         return Err(AppError::Validation(msg));
     }
 
     let file_name_lang: &str = data.file_name_lang.as_deref().unwrap_or("normalized");
-
-    let languages_cache = languages::get_cached_languages(&db.0).await?;
 
     let mut tx = db.0.begin().await?;
 
@@ -145,26 +142,10 @@ async fn create_or_update_user(
     .fetch_one(&mut *tx)
     .await?;
 
-    update_languages(&mut tx, user.id, &data.allowed_langs).await?;
+    // On validation failure `tx` is dropped, rolling back the user upsert too.
+    let allowed_langs = update_languages(&mut tx, user.id, &data.allowed_langs).await?;
 
     tx.commit().await?;
-
-    let mut seen = std::collections::HashSet::new();
-    let allowed_langs: Vec<UserLanguage> = data
-        .allowed_langs
-        .iter()
-        .filter(|code| seen.insert(code.as_str()))
-        .filter_map(|code| {
-            languages_cache
-                .iter()
-                .find(|l| &l.code == code)
-                .map(|l| UserLanguage {
-                    id: l.id,
-                    label: l.label.clone(),
-                    code: l.code.clone(),
-                })
-        })
-        .collect();
 
     Ok(Json(UserDetail {
         id: user.id,
@@ -181,37 +162,24 @@ async fn create_or_update_user(
 }
 
 async fn update_activity(
-    Path(user_id): Path<i64>,
+    ApiPath(user_id): ApiPath<i64>,
     db: Database,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = sqlx::query_as!(
-        SimpleUser,
+    let result = sqlx::query!(
         r#"
-        SELECT id, user_id, last_name, first_name, username, source, default_search, file_name_lang
-        FROM user_settings
-        WHERE user_id = $1
+        INSERT INTO user_activity ("user", updated)
+        SELECT id, NOW() FROM user_settings WHERE user_id = $1
+        ON CONFLICT ("user") DO UPDATE
+        SET updated = NOW()
         "#,
         user_id,
     )
-    .fetch_optional(&db.0)
-    .await?;
-
-    let user = match user {
-        Some(v) => v,
-        None => return Ok(StatusCode::NOT_FOUND.into_response()),
-    };
-
-    sqlx::query!(
-        r#"
-            INSERT INTO user_activity ("user", updated)
-            VALUES ($1, NOW())
-            ON CONFLICT ("user") DO UPDATE
-            SET updated = NOW()
-        "#,
-        user.id,
-    )
     .execute(&db.0)
     .await?;
+
+    if result.rows_affected() == 0 {
+        return Ok(StatusCode::NOT_FOUND.into_response());
+    }
 
     Ok(StatusCode::OK.into_response())
 }

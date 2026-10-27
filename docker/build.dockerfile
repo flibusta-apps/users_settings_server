@@ -1,4 +1,4 @@
-FROM rust:bookworm AS builder
+FROM rust:1.90-bookworm AS builder
 
 ENV SQLX_OFFLINE=true
 
@@ -38,6 +38,6 @@ RUN chown app:app /usr/local/bin/users_settings_server
 USER app
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8080/ready || exit 1
+    CMD curl -fsS --max-time 2 "http://localhost:${PORT:-8080}/ready" || exit 1
 
 CMD ["/start.sh"]

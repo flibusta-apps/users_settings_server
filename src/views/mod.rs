@@ -7,9 +7,11 @@ use axum::{
 };
 use axum_prometheus::PrometheusMetricLayer;
 use sqlx::PgPool;
+use std::time::Duration;
 use subtle::ConstantTimeEq;
 
 use tower_http::catch_panic::CatchPanicLayer;
+use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::{self, TraceLayer};
 use tracing::Level;
 
@@ -53,9 +55,15 @@ async fn health_check() -> StatusCode {
 }
 
 async fn ready_check(db: Database) -> StatusCode {
-    match sqlx::query("SELECT 1").execute(&db.0).await {
-        Ok(_) => StatusCode::OK,
-        Err(_) => StatusCode::SERVICE_UNAVAILABLE,
+    let check = tokio::time::timeout(
+        Duration::from_secs(2),
+        sqlx::query("SELECT 1").execute(&db.0),
+    )
+    .await;
+
+    match check {
+        Ok(Ok(_)) => StatusCode::OK,
+        _ => StatusCode::SERVICE_UNAVAILABLE,
     }
 }
 
@@ -82,14 +90,22 @@ pub async fn get_router() -> Router {
         .route("/ready", get(ready_check))
         .layer(Extension(ready_client));
 
-    Router::new()
+    // Health/readiness probes are intentionally not traced (log noise).
+    let traced_router = Router::new()
         .merge(app_router)
         .merge(metric_router)
-        .merge(health_router)
+        .layer(TimeoutLayer::with_status_code(
+            StatusCode::REQUEST_TIMEOUT,
+            Duration::from_secs(5),
+        ))
         .layer(
             TraceLayer::new_for_http()
                 .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
                 .on_response(trace::DefaultOnResponse::new().level(Level::INFO)),
-        )
+        );
+
+    Router::new()
+        .merge(traced_router)
+        .merge(health_router)
         .layer(CatchPanicLayer::new())
 }

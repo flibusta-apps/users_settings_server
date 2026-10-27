@@ -5,7 +5,7 @@ use users_settings_server::views::users::utils::update_languages;
 async fn test_repeated_update_with_duplicates_does_not_duplicate_rows(pool: PgPool) {
     // Seed languages.
     sqlx::query!(
-        r#"INSERT INTO languages (label, code) VALUES ('Ukrainian', 'uk'), ('Belarusian', 'be'), ('Russian', 'ru')"#
+        r#"INSERT INTO languages (label, code) VALUES ('Ukrainian', 'uk'), ('Belarusian', 'be'), ('Russian', 'ru') ON CONFLICT (code) DO NOTHING"#
     )
     .execute(&pool)
     .await
@@ -69,7 +69,7 @@ async fn test_repeated_update_with_duplicates_does_not_duplicate_rows(pool: PgPo
 
 #[sqlx::test(migrations = "./migrations")]
 async fn test_empty_allowed_langs_results_in_no_rows(pool: PgPool) {
-    sqlx::query!(r#"INSERT INTO languages (label, code) VALUES ('Ukrainian', 'uk')"#)
+    sqlx::query!(r#"INSERT INTO languages (label, code) VALUES ('Ukrainian', 'uk') ON CONFLICT (code) DO NOTHING"#)
         .execute(&pool)
         .await
         .unwrap();

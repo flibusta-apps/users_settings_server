@@ -2,7 +2,7 @@ pub mod serializers;
 pub mod utils;
 
 use self::{
-    serializers::{CreateOrUpdateUserData, SimpleUser, UserDetail, UserLanguage},
+    serializers::{CreateOrUpdateUserData, PatchUserData, SimpleUser, UserDetail, UserLanguage},
     utils::update_languages,
 };
 use axum::{
@@ -30,8 +30,7 @@ async fn get_users(
         .fetch_one(&db.0)
         .await?;
 
-    let users = sqlx::query_as!(
-        UserDetail,
+    let users = sqlx::query_as::<_, UserDetail>(
         r#"
         SELECT
             user_settings.id,
@@ -49,7 +48,7 @@ async fn get_users(
                     languages.code
                 )::user_language_type) FILTER (WHERE languages.id IS NOT NULL),
                 ARRAY[]::user_language_type[]
-            ) AS "allowed_langs!: Vec<UserLanguage>"
+            ) AS allowed_langs
         FROM user_settings
         LEFT JOIN users_languages ON user_settings.id = users_languages.user
         LEFT JOIN languages ON users_languages.language = languages.id
@@ -58,9 +57,9 @@ async fn get_users(
         OFFSET $1
         LIMIT $2
         "#,
-        pagination.skip(),
-        pagination.take(),
     )
+    .bind(pagination.skip())
+    .bind(pagination.take())
     .fetch_all(&db.0)
     .await?;
 
@@ -71,8 +70,7 @@ async fn get_user(
     ApiPath(user_id): ApiPath<i64>,
     db: Database,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = sqlx::query_as!(
-        UserDetail,
+    let user = sqlx::query_as::<_, UserDetail>(
         r#"
         SELECT
             user_settings.id,
@@ -90,15 +88,15 @@ async fn get_user(
                     languages.code
                 )::user_language_type) FILTER (WHERE languages.id IS NOT NULL),
                 ARRAY[]::user_language_type[]
-            ) AS "allowed_langs!: Vec<UserLanguage>"
+            ) AS allowed_langs
         FROM user_settings
         LEFT JOIN users_languages ON user_settings.id = users_languages.user
         LEFT JOIN languages ON users_languages.language = languages.id
         WHERE user_settings.user_id = $1
         GROUP BY user_settings.id
         "#,
-        user_id,
     )
+    .bind(user_id)
     .fetch_optional(&db.0)
     .await?;
 
@@ -122,8 +120,7 @@ async fn create_or_update_user(
 
     let mut tx = db.0.begin().await?;
 
-    let user = sqlx::query_as!(
-        SimpleUser,
+    let user = sqlx::query_as::<_, SimpleUser>(
         r#"
             INSERT INTO user_settings (user_id, last_name, first_name, username, source, default_search, file_name_lang)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -131,14 +128,14 @@ async fn create_or_update_user(
             SET last_name = $2, first_name = $3, username = $4, source = $5, default_search = $6, file_name_lang = $7
             RETURNING id, user_id, last_name, first_name, username, source, default_search, file_name_lang
         "#,
-        data.user_id,
-        data.last_name,
-        data.first_name,
-        data.username,
-        data.source,
-        data.default_search,
-        file_name_lang,
     )
+    .bind(data.user_id)
+    .bind(&data.last_name)
+    .bind(&data.first_name)
+    .bind(&data.username)
+    .bind(&data.source)
+    .bind(&data.default_search)
+    .bind(file_name_lang)
     .fetch_one(&mut *tx)
     .await?;
 
@@ -184,10 +181,72 @@ async fn update_activity(
     Ok(StatusCode::OK.into_response())
 }
 
+/// Serializes patches on the user row, including language replacement, so
+/// concurrent changes to separate fields cannot restore a stale profile.
+pub async fn patch_user(
+    pool: &sqlx::PgPool,
+    user_id: i64,
+    data: PatchUserData,
+) -> Result<Option<UserDetail>, AppError> {
+    data.validate().map_err(AppError::Validation)?;
+    let mut tx = pool.begin().await?;
+    let user = sqlx::query_as::<_, SimpleUser>(
+        r#"UPDATE user_settings
+        SET default_search = CASE WHEN $2 THEN $3 ELSE default_search END,
+            file_name_lang = COALESCE($4, file_name_lang)
+        WHERE user_id = $1
+        RETURNING id, user_id, last_name, first_name, username, source, default_search, file_name_lang"#,
+    )
+    .bind(user_id)
+    .bind(data.default_search.is_some())
+    .bind(data.default_search.flatten())
+    .bind(data.file_name_lang)
+    .fetch_optional(&mut *tx)
+    .await?;
+    let Some(user) = user else {
+        return Ok(None);
+    };
+    let allowed_langs = if let Some(languages) = data.allowed_langs {
+        update_languages(&mut tx, user.id, &languages).await?
+    } else {
+        sqlx::query_as::<_, UserLanguage>(
+            r#"SELECT languages.id, languages.label, languages.code FROM languages
+            JOIN users_languages ON users_languages.language = languages.id
+            WHERE users_languages."user" = $1 ORDER BY languages.id"#,
+        )
+        .bind(user.id)
+        .fetch_all(&mut *tx)
+        .await?
+    };
+    tx.commit().await?;
+    Ok(Some(UserDetail {
+        id: user.id,
+        user_id: user.user_id,
+        last_name: user.last_name,
+        first_name: user.first_name,
+        username: user.username,
+        source: user.source,
+        default_search: user.default_search,
+        file_name_lang: user.file_name_lang,
+        allowed_langs,
+    }))
+}
+
+async fn patch_user_handler(
+    ApiPath(user_id): ApiPath<i64>,
+    db: Database,
+    ApiJson(data): ApiJson<PatchUserData>,
+) -> Result<axum::response::Response, AppError> {
+    Ok(match patch_user(&db.0, user_id, data).await? {
+        Some(user) => Json(user).into_response(),
+        None => StatusCode::NOT_FOUND.into_response(),
+    })
+}
+
 pub fn get_router() -> Router {
     Router::new()
         .route("/", get(get_users))
-        .route("/{user_id}", get(get_user))
+        .route("/{user_id}", get(get_user).patch(patch_user_handler))
         .route("/", post(create_or_update_user))
         .route("/{user_id}/update_activity", post(update_activity))
 }

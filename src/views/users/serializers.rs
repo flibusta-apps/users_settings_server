@@ -10,7 +10,7 @@ pub struct UserLanguage {
 
 #[derive(sqlx::FromRow, Serialize)]
 pub struct SimpleUser {
-    pub id: i32,
+    pub id: i64,
     pub user_id: i64,
     pub last_name: String,
     pub first_name: String,
@@ -22,7 +22,7 @@ pub struct SimpleUser {
 
 #[derive(sqlx::FromRow, Serialize)]
 pub struct UserDetail {
-    pub id: i32,
+    pub id: i64,
     pub user_id: i64,
     pub last_name: String,
     pub first_name: String,
@@ -47,6 +47,41 @@ pub struct CreateOrUpdateUserData {
 
 const ALLOWED_DEFAULT_SEARCH: [&str; 4] = ["book", "author", "series", "translator"];
 const ALLOWED_FILE_NAME_LANG: [&str; 2] = ["normalized", "original"];
+
+/// Omitted fields are preserved. Explicit null clears `default_search`.
+#[derive(Default, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct PatchUserData {
+    pub allowed_langs: Option<Vec<String>>,
+    #[serde(default, deserialize_with = "deserialize_default_search_patch")]
+    pub default_search: Option<Option<String>>,
+    pub file_name_lang: Option<String>,
+}
+
+fn deserialize_default_search_patch<'de, D>(
+    deserializer: D,
+) -> Result<Option<Option<String>>, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    Option::<String>::deserialize(deserializer).map(Some)
+}
+
+impl PatchUserData {
+    pub fn validate(&self) -> Result<(), String> {
+        if let Some(Some(value)) = &self.default_search {
+            if !ALLOWED_DEFAULT_SEARCH.contains(&value.as_str()) {
+                return Err("invalid default_search".to_string());
+            }
+        }
+        if let Some(value) = &self.file_name_lang {
+            if !ALLOWED_FILE_NAME_LANG.contains(&value.as_str()) {
+                return Err("invalid file_name_lang".to_string());
+            }
+        }
+        Ok(())
+    }
+}
 
 impl CreateOrUpdateUserData {
     pub fn validate(&self) -> Result<(), String> {

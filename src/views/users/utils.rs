@@ -11,7 +11,7 @@ use crate::error::AppError;
 /// were actually saved (in request order, without duplicates).
 pub async fn update_languages(
     tx: &mut Transaction<'_, Postgres>,
-    user: i32,
+    user: i64,
     new_langs: &[String],
 ) -> Result<Vec<UserLanguage>, AppError> {
     let mut seen = std::collections::HashSet::new();
@@ -43,23 +43,21 @@ pub async fn update_languages(
 
     let ids: Vec<i32> = found.iter().map(|l| l.id).collect();
 
-    sqlx::query!(
-        r#"DELETE FROM users_languages WHERE "user" = $1 AND language <> ALL($2)"#,
-        user,
-        &ids
-    )
-    .execute(&mut **tx)
-    .await?;
+    sqlx::query(r#"DELETE FROM users_languages WHERE "user" = $1 AND language <> ALL($2)"#)
+        .bind(user)
+        .bind(&ids)
+        .execute(&mut **tx)
+        .await?;
 
-    sqlx::query!(
+    sqlx::query(
         r#"
         INSERT INTO users_languages ("user", language)
         SELECT $1, UNNEST($2::int4[])
         ON CONFLICT ("user", language) DO NOTHING
         "#,
-        user,
-        &ids
     )
+    .bind(user)
+    .bind(&ids)
     .execute(&mut **tx)
     .await?;
 

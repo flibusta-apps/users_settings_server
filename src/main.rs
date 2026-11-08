@@ -1,5 +1,5 @@
 use sentry::{types::Dsn, ClientOptions};
-use sentry_tracing::EventFilter;
+mod telemetry;
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 use users_settings_server::{config, views};
@@ -52,22 +52,18 @@ async fn shutdown_signal() {
 #[tokio::main]
 async fn main() {
     let _guard = config::CONFIG.sentry_dsn.as_ref().map(|dsn| {
-        let options = ClientOptions {
-            dsn: Some(Dsn::from_str(dsn).unwrap()),
-            ..Default::default()
-        };
+        let mut options = ClientOptions::default();
+        options.dsn = Some(Dsn::from_str(dsn).unwrap());
 
         sentry::init(options)
     });
 
-    let sentry_layer = sentry_tracing::layer().event_filter(|md| match md.level() {
-        &tracing::Level::ERROR => EventFilter::Event,
-        _ => EventFilter::Ignore,
-    });
+    let sentry_layer = telemetry::error_layer();
 
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::layer().with_target(false))
         .with(EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")))
+        .with(telemetry::span_layer())
         .with(sentry_layer)
         .init();
 
